@@ -35,7 +35,7 @@ func (c * RabbitClient) Dial(address string) error {
 		nil,     // arguments
 	)
 	rq, err := ch.QueueDeclare(
-		"clientreading"+name, // name
+		"clientreading"+address, // name
 		false,   // durable
 		false,   // delete when unused
 		false,   // exclusive
@@ -65,7 +65,7 @@ func (c * RabbitClient) Start() {
 	go func() {
 	  for d := range msgs {
 		c.incoming <- protocol.MessageCommand{
-			Message: d.Body,
+			Message: string(d.Body),
 		}
 	  }
 	}()
