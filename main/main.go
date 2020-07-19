@@ -14,7 +14,7 @@ import (
 func tcpServerStart() {
 	var s server.ChatServer
 	s = server.NewServer()
-	err := s.Listen("192.168.0.16:1111")
+	err := s.Listen("192.168.56.101:1111")
 	if err != nil {
 		log.Printf("error=%s",err.Error())
 	}
@@ -24,7 +24,7 @@ func tcpServerStart() {
 func UdpServerStart() {
 	var s server.ChatServer
 	s = server.NewUdpServer()
-	err := s.Listen("192.168.0.16:2222")
+	err := s.Listen("192.168.56.101:2222")
 	if err != nil {
 		log.Printf("error=%s",err.Error())
 	}
@@ -34,7 +34,7 @@ func UdpServerStart() {
 func rpcServerStart() {
 	var s server.ChatServer
 	s = myrpc.NewRpcServer()
-	err := s.Listen("192.168.0.16:3333")
+	err := s.Listen("192.168.56.101:3333")
 	if err != nil {
 		log.Printf("error=%s",err.Error())
 	}
@@ -45,7 +45,7 @@ func rpcClient() client.ChatClient {
 	var c1 client.ChatClient
 	c1 = myrpc.NewRpcClient()
 	println("lets dial")
-	err := c1.Dial("192.168.0.16:3333")
+	err := c1.Dial("192.168.56.101:3333")
 	if err != nil {
 		log.Printf("main dial error=%s",err.Error())
 	}
@@ -56,7 +56,7 @@ func rpcClient() client.ChatClient {
 func udpClient() client.ChatClient {
 	var c1 client.ChatClient
 	c1 = client.NewUdpClient()
-	err := c1.Dial("192.168.0.16:2222")
+	err := c1.Dial("192.168.56.101:2222")
 	if err != nil {
 		log.Printf("main dial error=%s",err.Error())
 	}
@@ -67,7 +67,7 @@ func udpClient() client.ChatClient {
 func tcpClient() client.ChatClient {
 	var c1 client.ChatClient
 	c1 = client.NewClient()
-	var err = c1.Dial("192.168.0.16:1111")
+	var err = c1.Dial("192.168.56.101:1111")
 	if err != nil {
 		log.Printf("main dial error=%s",err.Error())
 	}
