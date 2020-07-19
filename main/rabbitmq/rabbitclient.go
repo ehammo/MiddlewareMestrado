@@ -3,26 +3,29 @@ package main_rabbitmq
 import (
 	"github.com/streadway/amqp"
 	"log"
-	"net"
 )
 
 type RabbitClient struct {
-	ch chan struct{}
+	ch *amqp.Channel
 	writequeue amqp.Queue
 	readqueue amqp.Queue
-	incoming chan struct{}
+	incoming chan []byte
+}
+
+func NewClient() *RabbitClient {
+	return &RabbitClient{
+		incoming: make(chan []byte),
+	}
 }
 
 func (c * RabbitClient) Dial(name string) {
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
-	defer conn.Close()
 	ch, err := conn.Channel()
 	failOnError(err, "Failed to open a channel")
 	c.ch = ch
-
 	wq, err := ch.QueueDeclare(
-		"clientwrinting", // name
+		"clientwriting", // name
 		false,   // durable
 		false,   // delete when unused
 		false,   // exclusive
@@ -43,8 +46,8 @@ func (c * RabbitClient) Dial(name string) {
 }
 
 func (c * RabbitClient) start() {
-	msgs, err := ch.Consume(
-	  q.Name, // queue
+	msgs, err := c.ch.Consume(
+	  c.readqueue.Name, // queue
 	  "",     // consumer
 	  true,   // auto-ack
 	  false,  // exclusive
@@ -67,9 +70,9 @@ func (c * RabbitClient) start() {
 }
 
 func (c * RabbitClient) sendMessage(body string) {
-	err = c.ch.Publish(
+	var err = c.ch.Publish(
 		"",     // exchange
-		c.wq.Name, // routing key
+		c.writequeue.Name, // routing key
 		false,  // mandatory
 		false,  // immediate
 		amqp.Publishing {
@@ -79,11 +82,8 @@ func (c * RabbitClient) sendMessage(body string) {
 	failOnError(err, "Failed to publish a message")
 }
 
-
-
 func failOnError(err error, msg string) {
 	if err != nil {
 		log.Fatalf("%s: %s", msg, err)
 	}
 }
-

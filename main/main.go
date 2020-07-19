@@ -2,6 +2,7 @@ package main
 
 import (
 	myrpc "./rpc"
+	rabbit "./rabbitmq"
 	client "./socket/client"
 	server "./socket/server"
 	"fmt"
@@ -41,6 +42,14 @@ func rpcServerStart() {
 	go s.Start()
 }
 
+func rabbitServerStart(clients []string) {
+	var s = rabbit.NewServer()
+	for i := range clients {
+		s.Register(clients[i])
+	}
+	go s.Start()
+}
+
 func rpcClient() client.ChatClient {
 	var c1 client.ChatClient
 	c1 = myrpc.NewRpcClient()
@@ -76,12 +85,12 @@ func tcpClient() client.ChatClient {
 }
 
 func runMessages(c1 client.ChatClient, sentMessages int, currentSum float64, clientType string, shouldRead bool,
-	             times [10000]float64) {
+	             times *[10000]float64) {
 	const defaultValue  = 10000
 	log.Printf("sending %d messages",defaultValue)
 	var sum float64
 	var total int
-	total = defaultValue - sentMessages
+	total = sentMessages
 	sum = currentSum
 	var forcefulBreak = false
 	var delay = 1*time.Millisecond
@@ -102,13 +111,16 @@ func runMessages(c1 client.ChatClient, sentMessages int, currentSum float64, cli
 			times[i] = float64(time.Since(t1).Nanoseconds())
 			if times[i] == 0 {
 				println("Eitcha deu um 0")
-				total -= 1
+				forcefulBreak = true
+				i=defaultValue
+			} else {
+				total += 1
 			}
 			sum += times[i]
 		}
 	}
 	println("sent")
-	if shouldRead {
+	if shouldRead && !forcefulBreak {
 		println("reading")
 		var t1 = time.Now()
 		count := 0
@@ -125,16 +137,17 @@ func runMessages(c1 client.ChatClient, sentMessages int, currentSum float64, cli
 		sum += float64(time.Since(t1).Nanoseconds())
 	}
 	println("read")
-	if !forcefulBreak && shouldRead {
-
+	if !forcefulBreak {
+		calculateMeanAndSd(total, times, sum)
 	} else {
 		println("forceful break")
+		runMessages(c1, sentMessages, sum, clientType, shouldRead, times)
 	}
 	println("finishing runmessages")
 	c1.Clean()
 }
 
-func calculateMeanAndSd(total int, times [] float64, sum float64) {
+func calculateMeanAndSd(total int, times* [10000]float64, sum float64) {
 	var mean, sd float64
 	if sum > 0 && total > 0 {
 		mean = sum/float64(total)
@@ -171,7 +184,11 @@ func runFiveClients(clientType string) {
 	} else {
 		shouldRead = false
 	}
-	var times [10000]float64
+	var c1times [10000]float64
+	var c2times [10000]float64
+	var c3times [10000]float64
+	var c4times [10000]float64
+	var c5times [10000]float64
 
 
 	log.Printf("Com 5 clientes")
@@ -187,11 +204,11 @@ func runFiveClients(clientType string) {
 	c4.SetName("c4")
 	c5.SetName("c5")
 	time.Sleep(1*time.Second)
-	go runMessages(c1, 0, 0, clientType, shouldRead,times)
-	go runMessages(c2, 0, 0, clientType, shouldRead,times)
-	go runMessages(c3, 0, 0, clientType, shouldRead,times)
-	go runMessages(c4, 0, 0, clientType, shouldRead,times)
-	go runMessages(c5, 0, 0, clientType, shouldRead,times)
+	go runMessages(c1, 0, 0, clientType, shouldRead,&c1times)
+	go runMessages(c2, 0, 0, clientType, shouldRead,&c2times)
+	go runMessages(c3, 0, 0, clientType, shouldRead,&c3times)
+	go runMessages(c4, 0, 0, clientType, shouldRead,&c4times)
+	go runMessages(c5, 0, 0, clientType, shouldRead,&c5times)
 	fmt.Scanln()
 	defer c1.Close()
 	defer c2.Close()
@@ -202,6 +219,9 @@ func runFiveClients(clientType string) {
 
 func main() {
 	runFiveClients("rpc")
-	// runFiveClients("tcp")
-	// runFiveClients("udp")
+	fmt.Scanln()
+	runFiveClients("tcp")
+	fmt.Scanln()
+	runFiveClients("udp")
+	fmt.Scanln()
 }

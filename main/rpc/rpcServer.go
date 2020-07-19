@@ -33,9 +33,11 @@ func (s *RpcServer) SendMessages(stream pb.RpcChat_SendMessagesServer) error {
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF {
+			println("eof")
 			return nil
 		}
 		if err != nil {
+			println("erro no recebimento "+err.Error())
 			return err
 		}
 
@@ -49,7 +51,11 @@ func (s *RpcServer) SendMessages(stream pb.RpcChat_SendMessagesServer) error {
 			Name:    in.Name,
 			Message: in.Message,
 		}
-		s.Broadcast(cmd)
+		err = s.Broadcast(cmd)
+		if err != nil {
+			println("erro no broadcast "+err.Error())
+			return err
+		}
 		s.mutex.Unlock()
 	}
 }
