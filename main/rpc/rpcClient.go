@@ -17,12 +17,12 @@ type RpcClient struct {
 	conn *grpc.ClientConn
 	stream pb.RpcChat_SendMessagesClient
 	name      string
-	incoming chan protocol.MessageCommand
+	incoming  chan protocol.MessageCommand
 }
 
 func NewRpcClient() clientI.ChatClient {
 	return &RpcClient{
-		incoming: make(chan protocol.MessageCommand),
+		incoming: make(chan protocol.MessageCommand, 50000),
 	}
 }
 

@@ -64,15 +64,14 @@ func (s *UdpChatServer) serve(client *udpclient) {
 		if cmd != nil {
 			switch v := cmd.(type) {
 			case protocol.SendCommand:
-				go s.Broadcast(protocol.MessageCommand{
+				s.Broadcast(protocol.MessageCommand{
 					Message: v.Message,
 					Name:    client.name,
 				})
 			case protocol.NameCommand:
 				client.name = v.Name
 			case protocol.MessageCommand:
-
-				go s.Broadcast(v)
+				s.Broadcast(v)
 			}
 		}
 		if err == io.EOF {

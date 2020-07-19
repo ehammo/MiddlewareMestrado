@@ -18,7 +18,7 @@ type UdpChatClient struct {
 
 func NewUdpClient() *UdpChatClient {
 	return &UdpChatClient{
-		incoming: make(chan protocol.MessageCommand),
+		incoming: make(chan protocol.MessageCommand, 50000),
 	}
 }
 

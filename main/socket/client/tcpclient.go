@@ -17,7 +17,7 @@ type TcpChatClient struct {
 
 func NewClient() *TcpChatClient {
 	return &TcpChatClient{
-		incoming: make(chan protocol.MessageCommand),
+		incoming: make(chan protocol.MessageCommand, 50000),
 	}
 }
 

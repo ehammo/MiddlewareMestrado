@@ -94,7 +94,7 @@ func (s *TcpChatServer) serve(client *client) {
 		if cmd != nil {
 			switch v := cmd.(type) {
 			case protocol.SendCommand:
-				go s.Broadcast(protocol.MessageCommand{
+				s.Broadcast(protocol.MessageCommand{
 					Message: v.Message,
 					Name:    client.name,
 				})

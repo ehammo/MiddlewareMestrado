@@ -44,8 +44,11 @@ func (s *RpcServer) SendMessages(stream pb.RpcChat_SendMessagesServer) error {
 		client := client{
 			stream: stream,
 		}
-		s.mutex.Lock()
-		s.clients[in.Name] = &client
+		if s.clients[in.Name] == nil {
+			s.mutex.Lock()
+			s.clients[in.Name] = &client
+			s.mutex.Unlock()
+		}
 		println("server received:",in.Name, in.Message)
 		cmd := protocol.MessageCommand{
 			Name:    in.Name,
@@ -56,7 +59,6 @@ func (s *RpcServer) SendMessages(stream pb.RpcChat_SendMessagesServer) error {
 			println("erro no broadcast "+err.Error())
 			return err
 		}
-		s.mutex.Unlock()
 	}
 }
 
