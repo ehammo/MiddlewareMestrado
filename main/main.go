@@ -1,14 +1,17 @@
 package main
 
 import (
-	myrpc "./rpc"
 	rabbit "./rabbitmq"
+	myrpc "./rpc"
 	client "./socket/client"
 	server "./socket/server"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"math"
+	"os"
+	"strconv"
 	"time"
 )
 
@@ -50,6 +53,18 @@ func rabbitServerStart(clients []string) {
 	go s.Start()
 }
 
+func rabbitClient(name string) client.ChatClient{
+	var c1 client.ChatClient
+	c1 = rabbit.NewClient()
+	println("lets dial")
+	err := c1.Dial(name)
+	if err != nil {
+		log.Printf("main dial error=%s",err.Error())
+	}
+	go c1.Start()
+	return c1
+}
+
 func rpcClient() client.ChatClient {
 	var c1 client.ChatClient
 	c1 = myrpc.NewRpcClient()
@@ -84,7 +99,8 @@ func tcpClient() client.ChatClient {
 	return c1
 }
 
-func runMessages(c1 client.ChatClient, sentMessages int, currentSum float64, clientType string, shouldRead bool,
+func runMessages(c1 client.ChatClient, sentMessages int, currentSum float64,
+	             clientType string, clientName string, shouldRead bool,
 	             times *[10000]float64) {
 	const defaultValue  = 10000
 	log.Printf("sending %d messages",defaultValue)
@@ -101,7 +117,7 @@ func runMessages(c1 client.ChatClient, sentMessages int, currentSum float64, cli
 			log.Printf("error=%s",err.Error())
 			if err == io.EOF {
 				var NewClient = createClient(clientType)
-				go runMessages(NewClient, i, sum, clientType, shouldRead, times)
+				go runMessages(NewClient, i, sum, clientType, clientName, shouldRead, times)
 				i = defaultValue
 				forcefulBreak = true
 			}
@@ -115,8 +131,8 @@ func runMessages(c1 client.ChatClient, sentMessages int, currentSum float64, cli
 				i=defaultValue
 			} else {
 				total += 1
+				sum += times[i]
 			}
-			sum += times[i]
 		}
 	}
 	println("sent")
@@ -125,9 +141,12 @@ func runMessages(c1 client.ChatClient, sentMessages int, currentSum float64, cli
 		var t1 = time.Now()
 		count := 0
 		for i := range c1.Incoming() {
-			println(count, i.Message)
+			if count % 1000 == 0 {
+				println(count, i.Message)
+			}
 			count+=1
 		}
+		println("sai do for")
 		time.Sleep(delay)
 		t1 = t1.Add(delay)
 		var tReadFinal = float64(time.Since(t1).Nanoseconds())
@@ -135,19 +154,21 @@ func runMessages(c1 client.ChatClient, sentMessages int, currentSum float64, cli
 			println("Eitcha deu um 0 na leitura")
 		}
 		sum += float64(time.Since(t1).Nanoseconds())
+		println("read "+string(count)+" messages")
 	}
 	println("read")
 	if !forcefulBreak {
-		calculateMeanAndSd(total, times, sum)
+		calculateMeanAndSd(clientType, clientName, total, times, sum)
 	} else {
 		println("forceful break")
-		runMessages(c1, sentMessages, sum, clientType, shouldRead, times)
+		runMessages(c1, sentMessages, sum, clientType, clientName, shouldRead, times)
 	}
 	println("finishing runmessages")
 	c1.Clean()
 }
 
-func calculateMeanAndSd(total int, times* [10000]float64, sum float64) {
+func calculateMeanAndSd(clientType string, clientName string,
+	                    total int, times* [10000]float64, sum float64) {
 	var mean, sd float64
 	if sum > 0 && total > 0 {
 		mean = sum/float64(total)
@@ -165,6 +186,40 @@ func calculateMeanAndSd(total int, times* [10000]float64, sum float64) {
 	}
 	sd = math.Sqrt(sd/float64(total))
 	log.Printf("Sd: %f", sd)
+	writeToFile(clientType, clientName, mean, sd, total)
+}
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
+func FloatToString(input_num float64) string {
+	return strconv.FormatFloat(input_num, 'f', 6, 64)
+}
+
+
+func writeToFile(clientType string, clientName string, mean float64, sd float64, total int) {
+	if !fileExists("output.txt") {
+		//Write first line
+		err := ioutil.WriteFile("temp.txt", []byte("clientType, clientName, mean, sd, total\n"), 0644)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	}
+	//Append second line
+	file, err := os.OpenFile("temp.txt", os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Println(err)
+	}
+	defer file.Close()
+	if _, err := file.WriteString(clientType + ", " + clientName + ", " +
+		FloatToString(mean)+", "+FloatToString(sd)+", "+string(total)); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func createClient(clientType string) client.ChatClient {
@@ -172,8 +227,10 @@ func createClient(clientType string) client.ChatClient {
 		return rpcClient()
 	} else if "udp" == clientType {
 		return udpClient()
-	} else {
+	} else if "tcp" == clientType {
 		return tcpClient()
+	} else {
+		return rabbitClient(clientType)
 	}
 }
 
@@ -193,22 +250,31 @@ func runFiveClients(clientType string) {
 
 	log.Printf("Com 5 clientes")
 	log.Printf(clientType)
-	var c1 = createClient(clientType)
-	var c2 = createClient(clientType)
-	var c3 = createClient(clientType)
-	var c4 = createClient(clientType)
-	var c5 = createClient(clientType)
+	var c1,c2,c3,c4,c5 client.ChatClient
+	if clientType != "rabbit" {
+		c1 = createClient(clientType)
+		c2 = createClient(clientType)
+		c3 = createClient(clientType)
+		c4 = createClient(clientType)
+		c5 = createClient(clientType)
+	} else {
+		c1 = createClient("c1")
+		c2 = createClient("c2")
+		c3 = createClient("c3")
+		c4 = createClient("c4")
+		c5 = createClient("c5")
+	}
 	c1.SetName("c1")
 	c2.SetName("c2")
 	c3.SetName("c3")
 	c4.SetName("c4")
 	c5.SetName("c5")
 	time.Sleep(1*time.Second)
-	go runMessages(c1, 0, 0, clientType, shouldRead,&c1times)
-	go runMessages(c2, 0, 0, clientType, shouldRead,&c2times)
-	go runMessages(c3, 0, 0, clientType, shouldRead,&c3times)
-	go runMessages(c4, 0, 0, clientType, shouldRead,&c4times)
-	go runMessages(c5, 0, 0, clientType, shouldRead,&c5times)
+	go runMessages(c1, 0, 0, clientType, "c1", shouldRead, &c1times)
+	go runMessages(c2, 0, 0, clientType, "c2",  shouldRead,&c2times)
+	go runMessages(c3, 0, 0, clientType, "c3",  shouldRead,&c3times)
+	go runMessages(c4, 0, 0, clientType, "c4",  shouldRead,&c4times)
+	go runMessages(c5, 0, 0, clientType, "c5",  shouldRead,&c5times)
 	fmt.Scanln()
 	defer c1.Close()
 	defer c2.Close()
@@ -223,5 +289,7 @@ func main() {
 	runFiveClients("tcp")
 	fmt.Scanln()
 	runFiveClients("udp")
+	fmt.Scanln()
+	runFiveClients("rabbit")
 	fmt.Scanln()
 }

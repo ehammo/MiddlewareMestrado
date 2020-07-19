@@ -1,24 +1,26 @@
 package main_rabbitmq
 
 import (
+	"../../protocol"
 	"github.com/streadway/amqp"
 	"log"
 )
 
 type RabbitClient struct {
 	ch *amqp.Channel
+	name string
 	writequeue amqp.Queue
 	readqueue amqp.Queue
-	incoming chan []byte
+	incoming chan protocol.MessageCommand
 }
 
 func NewClient() *RabbitClient {
 	return &RabbitClient{
-		incoming: make(chan []byte),
+		incoming: make(chan protocol.MessageCommand),
 	}
 }
 
-func (c * RabbitClient) Dial(name string) {
+func (c * RabbitClient) Dial(address string) error {
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
 	ch, err := conn.Channel()
@@ -43,9 +45,10 @@ func (c * RabbitClient) Dial(name string) {
 	failOnError(err, "Failed to declare a queue")
 	c.readqueue = rq
 	c.writequeue = wq
+	return nil
 }
 
-func (c * RabbitClient) start() {
+func (c * RabbitClient) Start() {
 	msgs, err := c.ch.Consume(
 	  c.readqueue.Name, // queue
 	  "",     // consumer
@@ -61,7 +64,9 @@ func (c * RabbitClient) start() {
 
 	go func() {
 	  for d := range msgs {
-		c.incoming <- d.Body
+		c.incoming <- protocol.MessageCommand{
+			Message: d.Body,
+		}
 	  }
 	}()
 
@@ -69,7 +74,12 @@ func (c * RabbitClient) start() {
 	<-forever
 }
 
-func (c * RabbitClient) sendMessage(body string) {
+func (c * RabbitClient) SetName(name string) error{
+	c.name = name
+	return nil
+}
+
+func (c * RabbitClient) SendMessage(body string) error {
 	var err = c.ch.Publish(
 		"",     // exchange
 		c.writequeue.Name, // routing key
@@ -77,11 +87,18 @@ func (c * RabbitClient) sendMessage(body string) {
 		false,  // immediate
 		amqp.Publishing {
 			ContentType: "text/plain",
-			Body:        []byte(body),
+			Body:        []byte(body+c.name),
 		})
 	failOnError(err, "Failed to publish a message")
+	return nil
 }
-
+func (c * RabbitClient) Close(){}
+func (c * RabbitClient) Clean(){
+	c.incoming = make(chan protocol.MessageCommand)
+}
+func (c *RabbitClient) Incoming() chan protocol.MessageCommand {
+	return c.incoming
+}
 func failOnError(err error, msg string) {
 	if err != nil {
 		log.Fatalf("%s: %s", msg, err)
