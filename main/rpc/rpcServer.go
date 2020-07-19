@@ -19,6 +19,7 @@ type RpcServer struct {
 	mutex   *sync.Mutex
 }
 type client struct {
+	valid bool
 	stream pb.RpcChat_SendMessagesServer
 }
 
@@ -34,15 +35,15 @@ func (s *RpcServer) SendMessages(stream pb.RpcChat_SendMessagesServer) error {
 		in, err := stream.Recv()
 		if err == io.EOF {
 			println("eof")
-			return nil
-		}
-		if err != nil {
+			return err
+		} else if err != nil {
 			println("erro no recebimento "+err.Error())
 			return err
 		}
 
 		client := client{
 			stream: stream,
+			valid: true,
 		}
 		if s.clients[in.Name] == nil {
 			s.mutex.Lock()
@@ -88,9 +89,12 @@ func  (s *RpcServer) Broadcast(command interface{}) error {
 		}
 	}
 	for _, client := range s.clients {
-		err := client.stream.Send(&in)
-		if (err != nil) {
-			return err
+		if client.valid {
+			err := client.stream.Send(&in)
+			if err != nil {
+				s.mutex.Lock()
+				client.valid = false
+			}
 		}
  	}
  	return nil

@@ -92,9 +92,11 @@ func (c * RabbitClient) SendMessage(body string) error {
 	failOnError(err, "Failed to publish a message")
 	return nil
 }
-func (c * RabbitClient) Close(){}
+func (c * RabbitClient) Close(){
+
+}
 func (c * RabbitClient) Clean(){
-	c.incoming = make(chan protocol.MessageCommand)
+	close(c.incoming)
 }
 func (c *RabbitClient) Incoming() chan protocol.MessageCommand {
 	return c.incoming

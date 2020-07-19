@@ -84,7 +84,7 @@ func (c *UdpChatClient) Start() {
 		}
 	}
 	println("timeout. Closing channel")
-	close(c.incoming)
+	//close(c.incoming)
 }
 
 func (c *UdpChatClient) Close() {
@@ -114,5 +114,5 @@ func (c *UdpChatClient) SetName(name string) error {
 }
 
 func (c *UdpChatClient) Clean() {
-	c.incoming = make(chan protocol.MessageCommand)
+	close(c.incoming)
 }

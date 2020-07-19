@@ -79,5 +79,5 @@ func (c *TcpChatClient) SendMessage(message string) error {
 }
 
 func (c *TcpChatClient) Clean() {
-	c.incoming = make(chan protocol.MessageCommand)
+	close(c.incoming)
 }

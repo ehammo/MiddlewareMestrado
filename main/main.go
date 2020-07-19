@@ -99,7 +99,7 @@ func tcpClient() client.ChatClient {
 	return c1
 }
 
-func runMessages(c1 client.ChatClient, sentMessages int, currentSum float64,
+func runMessages(c1 *client.ChatClient, sentMessages int, currentSum float64,
 	             clientType string, clientName string, shouldRead bool,
 	             times *[10000]float64) {
 	const defaultValue  = 10000
@@ -112,12 +112,10 @@ func runMessages(c1 client.ChatClient, sentMessages int, currentSum float64,
 	var delay = 1*time.Millisecond
 	for i := 0; i < defaultValue; i++ {
 		var t1 = time.Now()
-		err := c1.SendMessage(fmt.Sprintf("%d", i))
+		err := (*c1).SendMessage(fmt.Sprintf("%d", i))
 		if err != nil {
 			log.Printf("error=%s",err.Error())
 			if err == io.EOF {
-				var NewClient = createClient(clientType)
-				go runMessages(NewClient, i, sum, clientType, clientName, shouldRead, times)
 				i = defaultValue
 				forcefulBreak = true
 			}
@@ -135,36 +133,40 @@ func runMessages(c1 client.ChatClient, sentMessages int, currentSum float64,
 			}
 		}
 	}
-	println("sent")
-	if shouldRead && !forcefulBreak {
-		println("reading")
-		var t1 = time.Now()
-		count := 0
-		for i := range c1.Incoming() {
-			if count % 1000 == 0 {
-				println(count, i.Message)
-			}
-			count+=1
-		}
-		println("sai do for")
-		time.Sleep(delay)
-		t1 = t1.Add(delay)
-		var tReadFinal = float64(time.Since(t1).Nanoseconds())
-		if tReadFinal == 0 {
-			println("Eitcha deu um 0 na leitura")
-		}
-		sum += float64(time.Since(t1).Nanoseconds())
-		println("read "+string(count)+" messages")
-	}
-	println("read")
 	if !forcefulBreak {
+		println("sent")
+		if shouldRead {
+			println("reading")
+			var t1 = time.Now()
+			count := 0
+			for i := range (*c1).Incoming() {
+				if count % 10000 == 0 {
+					println(count, i.Message)
+					println("total ",total)
+				}
+				count+=1
+				if count >= total*5 {
+					break;
+				}
+			}
+			println("sai do for")
+			time.Sleep(delay)
+			t1 = t1.Add(delay)
+			var tReadFinal = float64(time.Since(t1).Nanoseconds())
+			if tReadFinal == 0 {
+				println("Eitcha deu um 0 na leitura")
+			}
+			sum += float64(time.Since(t1).Nanoseconds())
+			println("read "+strconv.Itoa(count)+" messages")
+		}
+		println("read")
 		calculateMeanAndSd(clientType, clientName, total, times, sum)
+		println("finishing runmessages")
 	} else {
 		println("forceful break")
-		runMessages(c1, sentMessages, sum, clientType, clientName, shouldRead, times)
+		var NewClient = createClient(clientType)
+		go runMessages(&NewClient, total, sum, clientType, clientName, shouldRead, times)
 	}
-	println("finishing runmessages")
-	c1.Clean()
 }
 
 func calculateMeanAndSd(clientType string, clientName string,
@@ -217,7 +219,7 @@ func writeToFile(clientType string, clientName string, mean float64, sd float64,
 	}
 	defer file.Close()
 	if _, err := file.WriteString(clientType + ", " + clientName + ", " +
-		FloatToString(mean)+", "+FloatToString(sd)+", "+string(total)); err != nil {
+		FloatToString(mean)+", "+FloatToString(sd)+", "+strconv.Itoa(total)); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -270,11 +272,11 @@ func runFiveClients(clientType string) {
 	c4.SetName("c4")
 	c5.SetName("c5")
 	time.Sleep(1*time.Second)
-	go runMessages(c1, 0, 0, clientType, "c1", shouldRead, &c1times)
-	go runMessages(c2, 0, 0, clientType, "c2",  shouldRead,&c2times)
-	go runMessages(c3, 0, 0, clientType, "c3",  shouldRead,&c3times)
-	go runMessages(c4, 0, 0, clientType, "c4",  shouldRead,&c4times)
-	go runMessages(c5, 0, 0, clientType, "c5",  shouldRead,&c5times)
+	go runMessages(&c1, 0, 0, clientType, "c1", shouldRead, &c1times)
+	go runMessages(&c2, 0, 0, clientType, "c2",  shouldRead,&c2times)
+	go runMessages(&c3, 0, 0, clientType, "c3",  shouldRead,&c3times)
+	go runMessages(&c4, 0, 0, clientType, "c4",  shouldRead,&c4times)
+	go runMessages(&c5, 0, 0, clientType, "c5",  shouldRead,&c5times)
 	fmt.Scanln()
 	defer c1.Close()
 	defer c2.Close()

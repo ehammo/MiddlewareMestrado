@@ -93,16 +93,25 @@ func (c *RpcClient) Start() {
 	println("Sending stuff")
 	ctx, cancel := context.WithTimeout(context.Background(), 30000*time.Second)
 	c.stream, _ = c.client.SendMessages(ctx)
+	var count int = 0
 	for {
 		in, err := c.stream.Recv()
 		if err == io.EOF {
+			c.Clean()
 			break
 		} else if err != nil {
 			log.Printf("Read error %v", err)
+			c.Clean()
 			break
 		}
 		if in != nil {
+			count++
 			c.incoming <- c.messageToCommand(in)
+		}
+		if count >= 49999 {
+			println("Already received more then 49999 messages. Closing channel")
+			c.Clean()
+			break
 		}
 	}
 	defer cancel()
@@ -113,5 +122,5 @@ func (c *RpcClient) Incoming() chan protocol.MessageCommand {
 }
 
 func (c *RpcClient) Clean() {
-	c.incoming = make(chan protocol.MessageCommand)
+	close(c.incoming)
 }
