@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"os"
 	"sync"
 )
 
@@ -31,14 +32,15 @@ func NewRpcServer() server.ChatServer {
 }
 
 func (s *RpcServer) SendMessages(stream pb.RpcChat_SendMessagesServer) error {
+	var err error
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF {
 			println("eof")
-			return err
+			break
 		} else if err != nil {
 			println("erro no recebimento "+err.Error())
-			return err
+			break
 		}
 
 		client := client{
@@ -58,9 +60,11 @@ func (s *RpcServer) SendMessages(stream pb.RpcChat_SendMessagesServer) error {
 		err = s.Broadcast(cmd)
 		if err != nil {
 			println("erro no broadcast "+err.Error())
-			return err
+			break
 		}
 	}
+	s.Close()
+	return err
 }
 
 func (s *RpcServer) Start() {
@@ -94,10 +98,13 @@ func  (s *RpcServer) Broadcast(command interface{}) error {
 			if err != nil {
 				s.mutex.Lock()
 				client.valid = false
+				s.mutex.Unlock()
 			}
 		}
  	}
  	return nil
 }
 
-func (s *RpcServer) Close() {}
+func (s *RpcServer) Close() {
+	os.Interrupt.Signal()
+}

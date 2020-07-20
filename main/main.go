@@ -185,7 +185,7 @@ func calculateMeanAndSd(clientType string, clientName string,
 	log.Printf("Mean: %f", mean)
 	sd = 0
 
-	for i := 0; i < total; i++ {
+	for i := 0; i < total && i < len(times); i++ {
 		if times[i] > 0 {
 			sd += math.Pow(times[i] - mean, 2)
 		}
