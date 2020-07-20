@@ -1,0 +1,2 @@
+clientType, clientName, mean, sd, total
+rpc, c1, 1027878.818085, 121958.999325, 51865

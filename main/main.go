@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
-	"os"
 	"strconv"
 	"time"
 )
@@ -195,35 +194,17 @@ func calculateMeanAndSd(clientType string, clientName string,
 	writeToFile(clientType, clientName, mean, sd, total)
 }
 
-func fileExists(filename string) bool {
-	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !info.IsDir()
-}
 func FloatToString(input_num float64) string {
 	return strconv.FormatFloat(input_num, 'f', 6, 64)
 }
 
 
 func writeToFile(clientType string, clientName string, mean float64, sd float64, total int) {
-	if !fileExists("output.txt") {
-		//Write first line
-		err := ioutil.WriteFile("temp.txt", []byte("clientType, clientName, mean, sd, total\n"), 0644)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-	}
-	//Append second line
-	file, err := os.OpenFile("temp.txt", os.O_APPEND|os.O_WRONLY, 0644)
+	var filename = clientType+clientName+".txt"
+	err := ioutil.WriteFile(filename, []byte("clientType, clientName, mean, sd, total\n"+
+		clientType + ", " + clientName + ", " +
+		FloatToString(mean)+", "+FloatToString(sd)+", "+strconv.Itoa(total)+"\n"), 0644)
 	if err != nil {
-		log.Println(err)
-	}
-	defer file.Close()
-	if _, err := file.WriteString(clientType + ", " + clientName + ", " +
-		FloatToString(mean)+", "+FloatToString(sd)+", "+strconv.Itoa(total)+"\n"); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -290,12 +271,13 @@ func runFiveClients(clientType string) {
 }
 
 func main() {
-	runFiveClients("rpc")
-	fmt.Scanln()
-	runFiveClients("tcp")
-	fmt.Scanln()
-	runFiveClients("udp")
-	fmt.Scanln()
-	runFiveClients("rabbit")
-	fmt.Scanln()
+	//runFiveClients("rpc")
+	//fmt.Scanln()
+	//runFiveClients("tcp")
+	//fmt.Scanln()
+	//runFiveClients("udp")
+	//fmt.Scanln()
+	//runFiveClients("rabbit")
+	//fmt.Scanln()
+	rabbitServerStart([]string{"c1","c2","c3","c4","c5"})
 }

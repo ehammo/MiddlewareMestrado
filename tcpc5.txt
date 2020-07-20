@@ -1,0 +1,2 @@
+clientType, clientName, mean, sd, total
+tcp, c5, 1459026.670000, 514428.735400, 10000

@@ -94,7 +94,7 @@ func (c *RpcClient) Start() {
 	c.stream, _ = c.client.SendMessages(ctx)
 	var count int = 0
 	for {
-		if count % 10000 == 0 || count > 40000 {
+		if count % 10000 == 0 || count > 49950 {
 			println(c.name, " count = ", count)
 		}
 		in, err := c.stream.Recv()
