@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"google.golang.org/grpc"
-	"io"
 	"log"
 	"time"
 )
@@ -95,13 +94,12 @@ func (c *RpcClient) Start() {
 	c.stream, _ = c.client.SendMessages(ctx)
 	var count int = 0
 	for {
+		if count % 10000 == 0 || count > 40000 {
+			println(c.name, " count = ", count)
+		}
 		in, err := c.stream.Recv()
-		if err == io.EOF {
-			c.Clean()
-			break
-		} else if err != nil {
+		if err != nil {
 			log.Printf("Read error %v", err)
-			c.Clean()
 			break
 		}
 		if in != nil {
@@ -110,10 +108,10 @@ func (c *RpcClient) Start() {
 		}
 		if count >= 49999 {
 			println("Already received more then 49999 messages. Closing channel")
-			c.Clean()
 			break
 		}
 	}
+	c.Clean()
 	defer cancel()
 }
 

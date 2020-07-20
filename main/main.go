@@ -105,8 +105,9 @@ func runMessages(c1 *client.ChatClient, sentMessages int, currentSum float64,
 	const defaultValue  = 10000
 	log.Printf("sending %d messages",defaultValue)
 	var sum float64
-	var total int
+	var total, zeroCount int
 	total = sentMessages
+	zeroCount=0
 	sum = currentSum
 	var forcefulBreak = false
 	var delay = 1*time.Millisecond
@@ -125,8 +126,12 @@ func runMessages(c1 *client.ChatClient, sentMessages int, currentSum float64,
 			times[i] = float64(time.Since(t1).Nanoseconds())
 			if times[i] == 0 {
 				println("Eitcha deu um 0")
-				forcefulBreak = true
-				i=defaultValue
+				zeroCount += 1
+				i--
+				if zeroCount == 5 {
+					i = defaultValue
+					forcefulBreak = true
+				}
 			} else {
 				total += 1
 				sum += times[i]
@@ -140,9 +145,8 @@ func runMessages(c1 *client.ChatClient, sentMessages int, currentSum float64,
 			var t1 = time.Now()
 			count := 0
 			for i := range (*c1).Incoming() {
-				if count % 10000 == 0 {
+				if count % 10000 == 0{
 					println(count, i.Message)
-					println("total ",total)
 				}
 				count+=1
 				if count >= total*5 {
@@ -219,7 +223,7 @@ func writeToFile(clientType string, clientName string, mean float64, sd float64,
 	}
 	defer file.Close()
 	if _, err := file.WriteString(clientType + ", " + clientName + ", " +
-		FloatToString(mean)+", "+FloatToString(sd)+", "+strconv.Itoa(total)); err != nil {
+		FloatToString(mean)+", "+FloatToString(sd)+", "+strconv.Itoa(total)+"\n"); err != nil {
 		log.Fatal(err)
 	}
 }

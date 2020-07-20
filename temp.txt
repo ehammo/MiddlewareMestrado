@@ -1,2 +1,0 @@
-clientType, clientName, mean, sd, total
-rpc, c3, 973271.130000, 266608.208802, 10000
