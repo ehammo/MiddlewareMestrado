@@ -1,2 +1,0 @@
-clientType, clientName, mean, sd, total
-tcp, c2, 1459025.380000, 516990.728623, 10000

@@ -1,2 +1,0 @@
-clientType, clientName, mean, sd, total
-udp, c2, 897486.360000, 222751.708936, 10000
