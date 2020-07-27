@@ -7,10 +7,10 @@ import (
 
 
 func main() {
-	//var s = middleware.NewMiddlewareServer("tcp")
-	//go s.Start()
-	//fmt.Scanln()
-	var s = middleware.NewMiddlewareServer("udp")
+	var s = middleware.NewMiddlewareServer("tcp")
 	go s.Start()
 	fmt.Scanln()
+	// var s = middleware.NewMiddlewareServer("udp")
+	// go s.Start()
+	// fmt.Scanln()
 }

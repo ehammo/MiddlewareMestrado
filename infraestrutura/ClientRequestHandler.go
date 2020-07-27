@@ -15,10 +15,12 @@ type ClientRequestHandler struct {
 	addr      *net.UDPAddr
 }
 
-func NewClient(transportType string) *ClientRequestHandler {
-	return &ClientRequestHandler {
+func NewClient(transportType string,address string) *ClientRequestHandler {
+	var crh = &ClientRequestHandler {
 		transportType: transportType,
 	}
+	crh.Dial(address)
+	return crh
 }
 
 func (c *ClientRequestHandler) Dial(address string) {

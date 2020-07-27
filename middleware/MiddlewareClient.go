@@ -14,7 +14,7 @@ type MiddlewareClient struct {
 
 func NewMiddlewareClient(transportType string, currentLane string) *MiddlewareClient {
 	return &MiddlewareClient {
-		crh:               infra.NewClient(transportType),
+		crh:               infra.NewClient(transportType, "localhost:1111"),
 		serverAddr:        "localhost:1111",
 		currentLane:       currentLane,
 	}
@@ -43,7 +43,6 @@ func (mc *MiddlewareClient) BenchmarkMessages(qtd int) {
 }
 
 func (mc *MiddlewareClient) Start() {
-	mc.crh.Dial(mc.serverAddr)
 	go mc.startLoop()
 }
 func (mc *MiddlewareClient) startLoop() {

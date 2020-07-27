@@ -11,63 +11,76 @@ import (
 type MiddlewareServer struct {
 	srh               *infra.ServerRequestHandler
 	serverAddr        string
-	clients           []*client
+	clients           []*infra.Client
 	mutex             *sync.Mutex
-}
-
-type client struct {
-	id int
-	currentLane string
+	maxClients        int
+	lastAddClient     int
 }
 
 func NewMiddlewareServer(transportType string) *MiddlewareServer {
 	return &MiddlewareServer{
-		srh:               infra.NewServer(transportType),
+		srh:               infra.NewServer(transportType, "localhost:1111"),
 		serverAddr:        "localhost:1111",
 		mutex:             &sync.Mutex{},
-		clients:           make([]*client, 10),
+		clients:           make([]*infra.Client, 10),
+		maxClients:        10,
+		lastAddClient:      0,
 	}
 }
 
 func (ms *MiddlewareServer) Start() {
-	ms.srh.Listen(ms.serverAddr)
 	for {
-		var id = ms.srh.AcceptNewClient()
-		if id == -1 {
+		var client = ms.srh.AcceptNewClient()
+		if client.UniqueId == ms.maxClients {
 			break
 		}
-		var client = &client{
-			id: id,
-			currentLane: "UNKNOWN",
-		}
 		ms.mutex.Lock()
-		ms.clients[id] = client
+		ms.clients[client.UniqueId] = client
+		ms.lastAddClient = client.UniqueId
 		ms.mutex.Unlock()
 		go ms.serve(client)
 	}
-}
+}	
 
-func (ms *MiddlewareServer) serve(c *client) {
+func (ms *MiddlewareServer) serve(c *infra.Client) {
 	for {
-		var data = ms.srh.Receive(c.id)
+		var data, addr = ms.srh.Receive(c)
+		if c.Addr == nil {
+			c.Addr = addr
+		} else if c.Addr != addr {
+			ms.mutex.Lock()
+			var newclient = true
+			for _, client := range ms.clients {
+				if c.Addr == addr {
+					newclient = false
+					c = client
+				}
+			}
+			if newclient {
+				ms.lastAddClient = ms.lastAddClient+1
+				newclientobject := c
+				newclientobject.Addr = addr
+				newclientobject.UniqueId = ms.lastAddClient
+				ms.clients[ms.lastAddClient] = newclientobject
+			}
+			ms.mutex.Unlock()
+		}
 		log.Println(string(data))
 		var cmd = strings.Split(string(data), ":")
 		if cmd[0] == "REGISTER" || cmd[0] == "LANE" {
-			c.currentLane = cmd[1]
+			c.CurrentLane = cmd[1]
 			ms.mutex.Lock()
-			ms.clients[c.id] = c
+			ms.clients[c.UniqueId] = c
 			ms.mutex.Unlock()
 		} else if cmd[0] == "BREAK" {
 			var lane = cmd[1]
 			ms.mutex.Lock()
 			for _, client := range ms.clients {
 				if client != nil{
-					fmt.Println(client.currentLane)
+					fmt.Println(client.CurrentLane)
 				}
-				if client != nil && strings.Contains(lane, client.currentLane) {
-					fmt.Println("sending this data from client ", len(data))
-					fmt.Println("sending this string from client ", string(data))
-					ms.srh.Send(data, client.id)
+				if client != nil && strings.Contains(lane, client.CurrentLane) {
+					ms.srh.Send(data, client)
 				}
 			}
 			ms.mutex.Unlock()

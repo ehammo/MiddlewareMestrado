@@ -51,8 +51,8 @@ func twoBreakingCars(clientType string) {
 }
 
 func main() {
-	//threeBreakingCars("tcp")
-	//fmt.Scanln()
-	twoBreakingCars("udp")
+	threeBreakingCars("tcp")
 	fmt.Scanln()
+	// twoBreakingCars("udp")
+	// fmt.Scanln()
 }
