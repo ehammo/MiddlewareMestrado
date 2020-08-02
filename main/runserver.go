@@ -2,15 +2,15 @@ package main
 
 import (
 	"fmt"
-	middleware "../middleware"
+	d "../distribution"
 )
 
 
 func main() {
-	var s = middleware.NewMiddlewareServer("tcp")
+	var s = d.NewInvoker("localhost:1111", "tcp")
 	go s.Start()
 	fmt.Scanln()
-	// var s = middleware.NewMiddlewareServer("udp")
-	// go s.Start()
-	// fmt.Scanln()
+	var s2 = d.NewInvoker("localhost:1111", "udp")
+	go s2.Start()
+	fmt.Scanln()
 }

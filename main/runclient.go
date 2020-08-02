@@ -1,14 +1,14 @@
 package main
 
 import (
-	middleware "../middleware"
+	d "../distribution"
 	"fmt"
 	"log"
 )
 
-func startClient(clientType string, lane string) *middleware.MiddlewareClient {
-	var c = middleware.NewMiddlewareClient(clientType, lane)
-	c.Start()
+func startClient(clientType string) *d.ClientProxy {
+	var c = d.NewClientProxy("localhost:1111", clientType)
+	//c.Start()
 	return c
 }
 
@@ -17,38 +17,20 @@ func startClient(clientType string, lane string) *middleware.MiddlewareClient {
 func threeBreakingCars(clientType string) {
 	log.Printf("twoBreakingCars")
 	log.Printf(clientType)
-	var c1,c2,c3,c4,c5 *middleware.MiddlewareClient
-	c1 = startClient(clientType, "lane1")
-	c2 = startClient(clientType, "lane1")
-	c3 = startClient(clientType, "lane1")
-	c4 = startClient(clientType, "lane2")
-	c5 = startClient(clientType, "lane2")
-	c1.Register()
-	c2.Register()
-	c3.Register()
-	c4.Register()
-	c5.Register()
-	c1.BroadcastMessage()
+	var c1,c2,c3,c4,c5 *d.ClientProxy
+	c1 = startClient(clientType)
+	c2 = startClient(clientType)
+	c3 = startClient(clientType)
+	c4 = startClient(clientType)
+	c5 = startClient(clientType)
+	c1.RegisterOnLane("lane1")
+	c2.RegisterOnLane("lane1")
+	c3.RegisterOnLane("lane2")
+	c4.RegisterOnLane("lane2")
+	c5.RegisterOnLane("lane2")
+	c1.BroadcastEvent("lane2")
 }
 
-//     c3   c2  c1^
-//     c5   c4^  (*)
-func twoBreakingCars(clientType string) {
-	log.Printf("twoBreakingCars")
-	log.Printf(clientType)
-	var c1,c2,c3,c4,c5 *middleware.MiddlewareClient
-	c1 = startClient(clientType, "lane1")
-	c2 = startClient(clientType, "lane1")
-	c3 = startClient(clientType, "lane1")
-	c4 = startClient(clientType, "lane2")
-	c5 = startClient(clientType, "lane2")
-	c1.Register()
-	c2.Register()
-	c3.Register()
-	c4.Register()
-	c5.Register()
-	c4.BroadcastMessage()
-}
 
 func main() {
 	threeBreakingCars("tcp")
