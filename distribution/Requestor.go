@@ -23,19 +23,38 @@ func (r *Requestor) Invoke(invocation *common.Invocation) *common.Termination {
 	if r.crh == nil || r.lastAddress != invocation.Addr {
 		r.crh = infra.NewCRH(invocation.Addr)
 	}
-	marshalledMessage, err := common.Marshall(*invocation.Message)
-	if err != nil {
-		return &common.Termination{
-			Result: fmt.Sprintf("%s: %s", "marshalling error: ", err),
-		}
-	}
+	packet := common.NewRequestPacket(*invocation.Message)
+	marshalledMessage, err := common.Marshall(*packet)
+	if err != nil {return marshallingError(err)}
 	if r.transportType == "tcp" {
-		return &common.Termination{
-			Result: r.crh.SendTcp(marshalledMessage),
-		}
+		return r.SendReceiveTcp(marshalledMessage)
 	} else {
-		return &common.Termination{
-			Result: r.crh.SendUdp(marshalledMessage),
-		}
+		return r.SendReceiveUdp(marshalledMessage)
 	}
+}
+
+func marshallingError(err error) *common.Termination {
+	return &common.Termination{
+		Result: fmt.Sprintf("%s: %s", "marshalling error: ", err),
+	}
+}
+
+func (r *Requestor) SendReceiveTcp(message []byte) *common.Termination {
+	r.crh.SendTcp(message)
+	data := r.crh.ReceiveTcp()
+	return unpackTermination(data)
+}
+
+func unpackTermination(data []byte) *common.Termination {
+	packet := &common.Packet{}
+	err := common.Unmarshall(data, packet)
+	if err != nil {return marshallingError(err)}
+	ter := string(packet.Body)
+	return &common.Termination{Result: ter}
+}
+
+func (r *Requestor) SendReceiveUdp(message []byte) *common.Termination {
+	r.crh.SendUdp(message)
+	data := r.crh.ReceiveUdp()
+	return unpackTermination(data)
 }

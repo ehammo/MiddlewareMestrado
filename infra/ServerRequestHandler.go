@@ -2,7 +2,6 @@ package infra
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"net"
 )
@@ -54,39 +53,30 @@ func (s *ServerRequestHandler) getUdpConn() *net.UDPConn {
 }
 
 func (s *ServerRequestHandler) ReceiveTcp(reader *bufio.Reader) ([]byte, error) {
-	fmt.Println("Server receiving bytes")
 	buffer := make([]byte, 1024)
 	size, err := reader.Read(buffer)
 	cmd := buffer[:size]
 	failOnError(err, "Read error:")
-	fmt.Println("Server received bytes")
 	return cmd, err
 }
 func (s *ServerRequestHandler) ReceiveUdp() ([]byte, *net.UDPAddr, error) {
-	fmt.Println("Server receiving bytes")
-	log.Println("receiving udp")
 	buffer := make([]byte, 1024)
 	size, addr, err := s.udplistener.ReadFromUDP(buffer)
 	failOnError(err, "Read error:")
-	fmt.Println("Server received bytes")
 	cmd := buffer[:size]
 	return cmd, addr, err
 }
 
 func (s *ServerRequestHandler) SendTcp(msg []byte, writer *bufio.Writer) error {
-	fmt.Println("Server receiving bytes")
 	_, err := writer.Write(msg)
 	failOnError(err, "error writing")
 	err = writer.Flush()
 	failOnError(err, "error writing")
-	fmt.Println("Server sent bytes")
 	return err
 }
 
 func (s *ServerRequestHandler) SendUdp(msg []byte, addr *net.UDPAddr) error {
-	fmt.Println("Server receiving bytes")
 	_, err := s.udplistener.WriteToUDP(msg, addr)
 	failOnError(err, "error writing")
-	fmt.Println("Server sent bytes")
 	return err
 }

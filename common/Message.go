@@ -15,11 +15,21 @@ type Termination struct {
 }
 
 type AOR struct {
-	AOR string
+	address string
+	protocol string
+	objectId string
+}
+
+func (aor *AOR) equals(aor2 *AOR) bool {
+	return aor.objectId == aor2.objectId &&
+		aor.address == aor2.address &&
+		aor.protocol == aor2.protocol
 }
 
 func NewAOR(address string, protocol string, objectId string) *AOR {
 	return &AOR{
-		AOR: address+protocol+objectId,
+		address:  address,
+		protocol: protocol,
+		objectId: objectId,
 	}
 }

@@ -41,9 +41,10 @@ func (c *ClientRequestHandler) ReceiveTcp() []byte {
 	if c.reader == nil {
 		c.DialTcp()
 	}
-	fmt.Println("Client receiving bytes")
 	if c.reader != nil {
-		cmd, err := c.reader.ReadBytes('\n')
+		buffer := make([]byte, 1024)
+		size, err := c.reader.Read(buffer)
+		cmd := buffer[:size]
 		failOnError(err, "Error receiving message")
 		if err == nil {
 			return cmd
@@ -55,7 +56,6 @@ func (c *ClientRequestHandler) ReceiveUdp() []byte {
 	if c.udpconn == nil {
 		c.DialUdp()
 	}
-	fmt.Println("Client receiving bytes")
 	if c.udpconn != nil {
 		buffer := make([]byte, 1024)
 		_, addr, err := c.udpconn.ReadFromUDP(buffer)
@@ -72,7 +72,6 @@ func (c *ClientRequestHandler) SendTcp(msg []byte) string {
 	if c.writer == nil {
 		c.DialTcp()
 	}
-	fmt.Println("Client sending bytes")
 	if c.writer != nil {
 		_, err := c.writer.Write(msg)
 		failOnError(err, "error writing")
@@ -91,7 +90,6 @@ func (c *ClientRequestHandler) SendUdp(msg []byte) string {
 	if c.udpconn == nil {
 		c.DialUdp()
 	}
-	fmt.Println("Client sending bytes")
 	if c.udpconn != nil {
 		_, err := c.udpconn.Write(msg)
 		failOnError(err, "error writing")

@@ -2,15 +2,12 @@ package common
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
-func Marshall(messageToMarshall Message) ([]byte, error) {
-	fmt.Println("Marshall: marshalling "+messageToMarshall.Operation)
+func Marshall(messageToMarshall Packet) ([]byte, error) {
 	return json.Marshal(messageToMarshall)
 }
 
-func Unmarshall(bytes []byte, bytesToMessage *Message) error {
-	fmt.Println("Marshall: unmarshalling")
+func Unmarshall(bytes []byte, bytesToMessage *Packet) error {
 	return json.Unmarshal(bytes, bytesToMessage)
 }

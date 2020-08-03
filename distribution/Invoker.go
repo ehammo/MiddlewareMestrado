@@ -61,6 +61,10 @@ func (i *Invoker) ServeUdp() {
 		}
 		newUdpClient := i.findAddUdpClient(addr)
 		i.unmarshallAndRun(data, newUdpClient)
+		reply := common.NewReplyPacket("Success")
+		dataToSend, err := common.Marshall(*reply)
+		//marshallerror
+		i.srh.SendUdp(dataToSend, newUdpClient.udpAddr)
 	}
 }
 
@@ -72,21 +76,28 @@ func (i *Invoker) ServeTcp(client *Client) {
 			fmt.Printf("Error receiving tcp data %s", err)
 		}
 		i.unmarshallAndRun(data, client)
+		reply := common.NewReplyPacket("Success")
+		dataToSend, err := common.Marshall(*reply)
+		//marshallerror
+		i.srh.SendTcp(dataToSend, client.tcpWriter)
 	}
 }
 
 func (i *Invoker) unmarshallAndRun(data []byte, client *Client){
 	fmt.Println("unmarshalling and running message from C"+strconv.Itoa(client.id))
-	message := &common.Message{}
-	var err = common.Unmarshall(data, message)
+	packet := &common.Packet{}
+	var err = common.Unmarshall(data, packet)
 	if err != nil {
 		fmt.Printf("Error unmarshelling %s", err)
 	}
-	fmt.Println("message = "+message.Operation+", "+message.Topic)
-	i.runCmd(client, message)
+	i.runCmd(client, packet)
 }
 
-func (i *Invoker) runCmd(c *Client, message *common.Message) {
+func (i *Invoker) runCmd(c *Client, packet *common.Packet) {
+	message := &common.Message{
+		Operation: string(packet.Header),
+		Topic:     string(packet.Body),
+	}
 	fmt.Println("running command "+message.Operation+" from client C"+strconv.Itoa(c.id))
 	if message.Operation == "REGISTER" || message.Operation == "LANE" {
 		c.currentLane = message.Topic
@@ -99,7 +110,7 @@ func (i *Invoker) runCmd(c *Client, message *common.Message) {
 		for _, client := range i.clients {
 			if client != nil && strings.Contains(lane, client.currentLane) {
 				if i.transportType == "tcp" {
-					data, err := common.Marshall(*message)
+					data, err := common.Marshall(*packet)
 					if err != nil {
 						fmt.Printf("Error marshelling %s", err)
 					}
@@ -108,7 +119,7 @@ func (i *Invoker) runCmd(c *Client, message *common.Message) {
 						fmt.Printf("Error sending %s", err)
 					}
 				} else {
-					data, err := common.Marshall(*message)
+					data, err := common.Marshall(*packet)
 					if err != nil {
 						fmt.Printf("Error marshelling %s", err)
 					}
