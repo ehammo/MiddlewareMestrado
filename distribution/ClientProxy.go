@@ -8,14 +8,14 @@ import (
 type ClientProxy struct {
 	requestor   *Requestor
 	srvAddress  string
-	typeName    string
+	id    string
 }
 
-func NewClientProxy(srvAddress string,
-	                transportType string) *ClientProxy {
+func NewClientProxy(aor *common.AOR) *ClientProxy {
 	return &ClientProxy{
-		requestor:   NewRequestor(transportType),
-		srvAddress:  srvAddress,
+		requestor:   NewRequestor(aor.Protocol),
+		srvAddress:  aor.Address,
+		id:          aor.ObjectId,
 	}
 }
 
