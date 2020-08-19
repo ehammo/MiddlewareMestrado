@@ -81,6 +81,7 @@ func (c *ClientRequestHandler) SendTcp(msg []byte) string {
 			return "error writing"
 		}
 	} else {
+		fmt.Println("Error dialing")
 		return "error dialing"
 	}
 	return "Send success"

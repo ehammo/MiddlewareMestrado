@@ -5,6 +5,11 @@ type Message struct {
 	Topic string `json:"topic"`
 }
 
+type LookupMessage struct {
+	Message *Message
+	AOR     *AOR
+}
+
 type Invocation struct {
 	Addr string
 	Message *Message

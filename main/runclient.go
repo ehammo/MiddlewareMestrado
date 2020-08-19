@@ -1,14 +1,17 @@
 package main
 
 import (
-	common "../common"
 	d "../distribution"
+	n "../naming"
 	"fmt"
 	"log"
 )
 
-func startClient(clientType string, id string) *d.ClientProxy {
-	aor := common.NewAOR("localhost:1111", clientType, id)
+func startClient() *d.ClientProxy {
+	namingProxy := n.NewNamingProxy()
+	aor := namingProxy.LookUp("Vanet")
+	fmt.Println("Received aor:")
+	fmt.Println(aor)
 	var c = d.NewClientProxy(aor)
 	//c.Start()
 	return c
@@ -16,15 +19,14 @@ func startClient(clientType string, id string) *d.ClientProxy {
 
 //     c3   c2  c1^  (*)
 //     c5   c4
-func threeBreakingCars(clientType string) {
+func threeBreakingCars() {
 	log.Printf("twoBreakingCars")
-	log.Printf(clientType)
 	var c1,c2,c3,c4,c5 *d.ClientProxy
-	c1 = startClient(clientType, "vanetqueue")
-	c2 = startClient(clientType, "vanetqueue")
-	c3 = startClient(clientType, "vanetqueue")
-	c4 = startClient(clientType, "vanetqueue")
-	c5 = startClient(clientType, "vanetqueue")
+	c1 = startClient()
+	c2 = startClient()
+	c3 = startClient()
+	c4 = startClient()
+	c5 = startClient()
 	c1.RegisterOnLane("lane1")
 	c2.RegisterOnLane("lane1")
 	c3.RegisterOnLane("lane2")
@@ -35,8 +37,8 @@ func threeBreakingCars(clientType string) {
 
 
 func main() {
-	threeBreakingCars("tcp")
+	threeBreakingCars()
 	fmt.Scanln()
-	// twoBreakingCars("udp")
+	// twoBreakingCars()
 	// fmt.Scanln()
 }

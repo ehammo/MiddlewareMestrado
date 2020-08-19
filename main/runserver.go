@@ -1,16 +1,22 @@
 package main
 
 import (
-	"fmt"
+	c "../common"
 	d "../distribution"
+	n "../naming"
+	"fmt"
 )
 
 
 func main() {
-	var s = d.NewInvoker("localhost:1111", "tcp")
+	namingProxy := n.NewNamingProxy()
+	aor := &c.AOR{
+		Address:  "localhost:1111",
+		Protocol: "tcp",
+		ObjectId: "1",
+	}
+	namingProxy.Register("Vanet", aor)
+	var s = d.NewInvoker(aor.Address, aor.Protocol)
 	go s.Start()
-	fmt.Scanln()
-	var s2 = d.NewInvoker("localhost:1111", "udp")
-	go s2.Start()
 	fmt.Scanln()
 }
