@@ -1,82 +1,70 @@
 package common
 
-import (
-	"encoding/json"
-	"fmt"
-)
-
 type Packet struct {
-	Header []byte
-	Body   []byte
+	Header Header
+	Body   Body
+}
+
+type Header struct {
+	version      string
+}
+
+type Body struct {
+	ReqHeader ReqHeader
+	ReqBody   ReqRepBody
+	RepHeader RepHeader
+	RepBody   ReqRepBody
+}
+
+type ReqHeader struct {
+	ResponseExpected bool
+	Operation        string
+}
+
+type ReqRepBody struct {
+	Body []interface{}
+}
+
+type RepHeader struct {
+    status string
 }
 
 func NewRequestPacket(message Message) *Packet {
-	op := []byte(message.Operation)
-	topic := []byte(message.Topic)
+	reqHeader := &ReqHeader{
+		ResponseExpected: message.IsReplyRequired(),
+		Operation: message.Operation,
+	}
+	var reqReqBodyArray = make([]interface{}, 2)
+	reqReqBodyArray[0] = message.Topic
+	reqReqBodyArray[1] = message.AOR
+	reqRepBody := &ReqRepBody {
+		Body: reqReqBodyArray,
+	}
 	return &Packet{
-		Header: op,
-		Body:   topic,
+		Header: Header{
+			version:    "1.0",
+		},
+		Body:   Body{
+			ReqHeader: *reqHeader,
+			ReqBody:   *reqRepBody,
+		},
 	}
 }
 
-func NewReplyPacket(response string) *Packet {
-	header := []byte("Reply")
-	body := []byte(response)
+func NewReplyPacket(response interface{}, status string) *Packet {
+	repHeader := &RepHeader{status: status}
+	var reqReqBodyArray = make([]interface{}, 1)
+	reqReqBodyArray[0] = response
+	reqRepBody := &ReqRepBody {
+		Body: reqReqBodyArray,
+	}
 	return &Packet{
-		Header: header,
-		Body:   body,
+		Header: Header{
+			version:    "1.0",
+		},
+		Body:   Body{
+			RepHeader: *repHeader,
+			RepBody:   *reqRepBody,
+		},
 	}
-}
-
-func NewLookUpReplyPacket(aor interface{}) *Packet {
-	fmt.Println("Creating reply package")
-	header := []byte("lookup")
-	body, _ := json.Marshal(aor)
-	return &Packet{
-		Header: header,
-		Body:   body,
-	}
-}
-
-func NewLookUpRequestPacket(message Message, aor interface{}) *Packet {
-	header := []byte("lookup")
-	aorBody, _ := json.Marshal(aor)
-	messageBody, _ := json.Marshal(message)
-	divider := make([]byte, 2)
-	divider[0] = '\n'
-	divider[1] = '\n'
-	aorBodyDivider := append(aorBody, divider...)
-	body := append(aorBodyDivider, messageBody...)
-	return &Packet{
-		Header: header,
-		Body:   body,
-	}
-}
-
-func CreateLookupMessageFromLookupPacket(packet *Packet) *LookupMessage {
-	if string(packet.Header) == "lookup" {
-		var aorBody []byte
-		var messageBody []byte
-		var lastOne = false
-		for i, b := range packet.Body {
-			if b == '\n' {
-				if lastOne == false {
-					lastOne = true
-				} else {
-					messageBody = packet.Body[i:len(packet.Body)]
-					aorBody = packet.Body[0:i]
-					break
-				}
-			}
-		}
-		aor := &AOR{}
-		message := &Message{}
-		_ = json.Unmarshal(aorBody, aor)
-		_ = json.Unmarshal(messageBody, message)
-		return &LookupMessage{
-			Message: message,
-			AOR:    aor,
-		}
-	}
-	return nil
 }

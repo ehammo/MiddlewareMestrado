@@ -19,19 +19,19 @@ func NewClientProxy(aor *common.AOR) *ClientProxy {
 	}
 }
 
-func (cp *ClientProxy) ChangeLane(newLane string) string {
-	return cp.invokeCommand("CHANGE", newLane)
+func (cp *ClientProxy) ChangeLane(newLane string) {
+	cp.invokeCommand("CHANGE", newLane)
 }
 
-func (cp *ClientProxy) BroadcastEvent(lane string) string {
-	return cp.invokeCommand("BREAK", lane)
+func (cp *ClientProxy) BroadcastEvent(lane string) {
+	cp.invokeCommand("BREAK", lane)
 }
 
-func (cp *ClientProxy) RegisterOnLane(lane string) string {
-	return cp.invokeCommand("REGISTER", lane)
+func (cp *ClientProxy) RegisterOnLane(lane string) {
+	cp.invokeCommand("REGISTER", lane)
 }
 
-func (cp *ClientProxy) invokeCommand(op string, lane string) string {
+func (cp *ClientProxy) invokeCommand(op string, lane string) {
 	fmt.Println("ClientProxy: invoking "+op)
 	var message = &common.Message{
 		Operation: op,
@@ -41,8 +41,7 @@ func (cp *ClientProxy) invokeCommand(op string, lane string) string {
 		Addr: cp.srvAddress,
 		Message: message,
 	}
-	response := cp.requestor.Invoke(invocation)
-	return response.Result
+	cp.requestor.Invoke(invocation)
 }
 
 

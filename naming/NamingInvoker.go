@@ -5,6 +5,7 @@ import (
 	i "../infra"
 	"bufio"
 	"fmt"
+	"reflect"
 )
 
 type NamingInvoker struct {
@@ -47,16 +48,22 @@ func (n *NamingInvoker) ServeTcp(client *Client) {
 		if err != nil {
 			fmt.Printf("\nerro %s\n", err)
 		}
-		lookupMessage := c.CreateLookupMessageFromLookupPacket(packet)
-		op := lookupMessage.Message.Operation
-		topic := lookupMessage.Message.Topic
+		op := packet.Body.ReqHeader.Operation
+		body0 := packet.Body.ReqBody.Body[0]
+		body1 := packet.Body.ReqBody.Body[1]
+		service, _ := reflect.ValueOf(body0).Interface().(string)
+		var aor c.AOR
+		if body1 != nil {
+			aor, _ = reflect.ValueOf(body1).Interface().(c.AOR)
+		}
+		fmt.Println("result:")
 		fmt.Println(op)
-		fmt.Println(topic)
+		fmt.Println(service)
 		if op == "REGISTER" {
-			n.NamingImpl.register(topic, lookupMessage.AOR)
+			n.NamingImpl.register(service, &aor)
 		} else if op == "LOOKUP" {
-			aor := n.NamingImpl.lookup(topic)
-			packet := c.NewLookUpReplyPacket(aor)
+			aor := n.NamingImpl.lookup(service)
+			packet := c.NewReplyPacket(aor, "success")
 			dataToSend, _ := c.Marshall(*packet)
 			n.srh.SendTcp(dataToSend, client.tcpWriter)
 		}

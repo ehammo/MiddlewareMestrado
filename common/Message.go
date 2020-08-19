@@ -2,25 +2,28 @@ package common
 
 type Message struct {
 	Operation string `json:"operation"`
-	Topic string `json:"topic"`
-}
-
-type LookupMessage struct {
-	Message *Message
+	Topic     string `json:"topic"`
 	AOR     *AOR
 }
 
+func (m *Message) IsReplyRequired() bool {
+	if m.Operation == "lookup" {
+		return true
+	}
+	return false
+}
+
 type Invocation struct {
-	Addr string
+	Addr    string
 	Message *Message
 }
 
 type Termination struct {
-	Result string
+	Result interface{}
 }
 
 type AOR struct {
-	Address string
+	Address  string
 	Protocol string
 	ObjectId string
 }

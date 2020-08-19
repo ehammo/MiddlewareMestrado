@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"fmt"
 	"net"
+	"reflect"
 	"strconv"
 	"sync"
 )
@@ -66,10 +67,10 @@ func (i *Invoker) ServeUdp() {
 		}
 		newUdpClient := i.findAddUdpClient(addr)
 		i.unmarshallAndRun(data, newUdpClient)
-		reply := common.NewReplyPacket("Success")
-		dataToSend, err := common.Marshall(*reply)
-		//marshallerror
-		i.srh.SendUdp(dataToSend, newUdpClient.udpAddr)
+		//reply := common.NewReplyPacket("Success")
+		//dataToSend, err := common.Marshall(*reply)
+		////marshallerror
+		//i.srh.SendUdp(dataToSend, newUdpClient.udpAddr)
 	}
 }
 
@@ -81,10 +82,10 @@ func (i *Invoker) ServeTcp(client *Client) {
 			fmt.Printf("Error receiving tcp data %s", err)
 		}
 		i.unmarshallAndRun(data, client)
-		reply := common.NewReplyPacket("Success")
-		dataToSend, err := common.Marshall(*reply)
-		//marshallerror
-		i.srh.SendTcp(dataToSend, client.tcpWriter)
+		//reply := common.NewReplyPacket("Success")
+		//dataToSend, err := common.Marshall(*reply)
+		////marshallerror
+		//i.srh.SendTcp(dataToSend, client.tcpWriter)
 	}
 }
 
@@ -99,9 +100,11 @@ func (i *Invoker) unmarshallAndRun(data []byte, client *Client){
 }
 
 func (i *Invoker) runCmd(c *Client, packet *common.Packet) {
+	body := packet.Body.ReqBody.Body[0]
+	topic, _ :=  reflect.ValueOf(body).Interface().(string)
 	message := &common.Message{
-		Operation: string(packet.Header),
-		Topic:     string(packet.Body),
+		Operation: packet.Body.ReqHeader.Operation,
+		Topic:     topic,
 	}
 	fmt.Println("running command "+message.Operation+" from client C"+strconv.Itoa(c.id))
 	if message.Operation == "REGISTER" {
