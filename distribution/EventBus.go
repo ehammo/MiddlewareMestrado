@@ -26,11 +26,11 @@ func (e *EventBus) ChangeLane(newLane string) string {
 }
 
 func (e *EventBus) BroadcastEvent(lane string) string {
-	return e.handleEvent("BREAK", lane)
+	return e.handleEvent("BroadcastEvent", lane)
 }
 
 func (e *EventBus) RegisterOnLane(lane string) string {
-	return e.handleEvent("REGISTER", lane)
+	return e.handleEvent("Register", lane)
 }
 
 func (e *EventBus) handleEvent(op string, lane string) string {
@@ -40,10 +40,10 @@ func (e *EventBus) handleEvent(op string, lane string) string {
 	}
 	e.mutex.Lock()
 	e.invoker.mutex.Lock()
-	if op == "REGISTER" || op == "LANE" {
+	if op == "Register" || op == "ChangeLane" {
 		e.client.currentLane = lane
 		e.invoker.clients[e.client.id] = e.client
-	} else if op == "BREAK" {
+	} else if op == "BroadcastEvent" {
 		for _, client := range e.invoker.clients {
 			if client != nil && strings.Contains(lane, client.currentLane) {
 				message := &common.Message{

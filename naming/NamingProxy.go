@@ -23,7 +23,7 @@ func NewNamingProxy() *NamingProxy {
 
 func (n *NamingProxy) Register(service string, aor *c.AOR) {
 	message := c.Message{
-		Operation: "REGISTER",
+		Operation: "Register",
 		Topic:     service,
 		AOR:       aor,
 	}
@@ -35,7 +35,7 @@ func (n *NamingProxy) Register(service string, aor *c.AOR) {
 func (n *NamingProxy) LookUp(service string) *c.AOR {
 	fmt.Println("Looking up")
 	message := &c.Message{
-		Operation: "LOOKUP",
+		Operation: "LookUp",
 		Topic:     service,
 	}
 	invocation := &c.Invocation{

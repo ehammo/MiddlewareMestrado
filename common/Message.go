@@ -7,7 +7,7 @@ type Message struct {
 }
 
 func (m *Message) IsReplyRequired() bool {
-	if m.Operation == "lookup" {
+	if m.Operation == "LookUp" {
 		return true
 	}
 	return false

@@ -59,10 +59,10 @@ func (n *NamingInvoker) ServeTcp(client *Client) {
 		fmt.Println("result:")
 		fmt.Println(op)
 		fmt.Println(service)
-		if op == "REGISTER" {
-			n.NamingImpl.register(service, &aor)
-		} else if op == "LOOKUP" {
-			aor := n.NamingImpl.lookup(service)
+		if op == "Register" {
+			n.NamingImpl.Register(service, &aor)
+		} else if op == "LookUp" {
+			aor := n.NamingImpl.Lookup(service)
 			packet := c.NewReplyPacket(aor, "success")
 			dataToSend, _ := c.Marshall(*packet)
 			n.srh.SendTcp(dataToSend, client.tcpWriter)

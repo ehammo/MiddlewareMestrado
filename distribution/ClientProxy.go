@@ -24,11 +24,11 @@ func (cp *ClientProxy) ChangeLane(newLane string) {
 }
 
 func (cp *ClientProxy) BroadcastEvent(lane string) {
-	cp.invokeCommand("BREAK", lane)
+	cp.invokeCommand("BroadcastEvent", lane)
 }
 
 func (cp *ClientProxy) RegisterOnLane(lane string) {
-	cp.invokeCommand("REGISTER", lane)
+	cp.invokeCommand("Register", lane)
 }
 
 func (cp *ClientProxy) invokeCommand(op string, lane string) {

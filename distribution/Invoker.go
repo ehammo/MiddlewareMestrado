@@ -107,11 +107,11 @@ func (i *Invoker) runCmd(c *Client, packet *common.Packet) {
 		Topic:     topic,
 	}
 	fmt.Println("running command "+message.Operation+" from client C"+strconv.Itoa(c.id))
-	if message.Operation == "REGISTER" {
+	if message.Operation == "Register" {
 		c.EventBus.RegisterOnLane(message.Topic)
-	} else if message.Operation == "LANE" {
+	} else if message.Operation == "ChangeLane" {
 		c.EventBus.ChangeLane(message.Topic)
-	} else if message.Operation == "BREAK" {
+	} else if message.Operation == "BroadcastEvent" {
 		c.EventBus.BroadcastEvent(message.Topic)
 	}
 }
