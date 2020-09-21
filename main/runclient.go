@@ -1,14 +1,16 @@
 package main
 
 import (
-	d "../distribution"
-	n "../naming"
 	"fmt"
 	"log"
+
+	d "../distribution"
+	n "../naming"
 )
 
 func startClient() *d.ClientProxy {
-	namingProxy := n.NewNamingProxy()
+	namingProxy := n.NewNamingProxy("localhost:1243")
+
 	aor := namingProxy.LookUp("Vanet")
 	fmt.Println("Received aor:")
 	fmt.Println(aor)
@@ -21,12 +23,17 @@ func startClient() *d.ClientProxy {
 //     c5   c4
 func threeBreakingCars() {
 	log.Printf("twoBreakingCars")
-	var c1,c2,c3,c4,c5 *d.ClientProxy
+	var c1, c2, c3, c4, c5 *d.ClientProxy
 	c1 = startClient()
 	c2 = startClient()
 	c3 = startClient()
 	c4 = startClient()
 	c5 = startClient()
+	c1.RegisterKey()
+	c2.RegisterKey()
+	c3.RegisterKey()
+	c4.RegisterKey()
+	c5.RegisterKey()
 	c1.RegisterOnLane("lane1")
 	c2.RegisterOnLane("lane1")
 	c3.RegisterOnLane("lane2")
@@ -34,7 +41,6 @@ func threeBreakingCars() {
 	c5.RegisterOnLane("lane2")
 	c1.BroadcastEvent("lane2")
 }
-
 
 func main() {
 	threeBreakingCars()

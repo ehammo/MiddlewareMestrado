@@ -24,9 +24,9 @@ func tcpServerStart() {
 	go s.Start()
 }
 
-func UdpServerStart() {
+func UDPServerStart() {
 	var s server.ChatServer
-	s = server.NewUdpServer()
+	s = server.NewUDPServer()
 	err := s.Listen("192.168.56.101:2222")
 	if err != nil {
 		log.Printf("error=%s",err.Error())
@@ -78,7 +78,7 @@ func rpcClient() client.ChatClient {
 
 func udpClient() client.ChatClient {
 	var c1 client.ChatClient
-	c1 = client.NewUdpClient()
+	c1 = client.NewUDPClient()
 	err := c1.Dial("192.168.56.101:2222")
 	if err != nil {
 		log.Printf("main-ex01-ex03 dial error=%s",err.Error())

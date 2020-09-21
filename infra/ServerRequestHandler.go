@@ -2,19 +2,19 @@ package infra
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"net"
 )
 
 type ServerRequestHandler struct {
-	listener      net.Listener
-	udplistener   *net.UDPConn
-	address       string
+	listener    net.Listener
+	udplistener *net.UDPConn
+	address     string
 }
 
-
 func NewSRH(address string) *ServerRequestHandler {
-	return &ServerRequestHandler {
+	return &ServerRequestHandler{
 		address: address,
 	}
 }
@@ -26,8 +26,8 @@ func (s *ServerRequestHandler) ListenTcp() {
 	log.Printf("Listening tcp on %v", s.address)
 }
 
-func (s *ServerRequestHandler) ListenUdp() {
-	addr,err := net.ResolveUDPAddr("udp",s.address)
+func (s *ServerRequestHandler) ListenUDP() {
+	addr, err := net.ResolveUDPAddr("udp", s.address)
 	failOnError(err, "error resolving to address")
 	l, err := net.ListenUDP("udp", addr)
 	failOnError(err, "error listening to address")
@@ -45,22 +45,22 @@ func (s *ServerRequestHandler) AcceptNewClientTcp() *net.Conn {
 	return &conn
 }
 
-func (s *ServerRequestHandler) getUdpConn() *net.UDPConn {
+func (s *ServerRequestHandler) getUDPConn() *net.UDPConn {
 	if s.udplistener == nil {
-		s.ListenUdp()
+		s.ListenUDP()
 	}
 	return s.udplistener
 }
 
 func (s *ServerRequestHandler) ReceiveTcp(reader *bufio.Reader) ([]byte, error) {
-	buffer := make([]byte, 1024)
+	buffer := make([]byte, 3000)
 	size, err := reader.Read(buffer)
 	cmd := buffer[:size]
 	failOnError(err, "Read error:")
 	return cmd, err
 }
-func (s *ServerRequestHandler) ReceiveUdp() ([]byte, *net.UDPAddr, error) {
-	buffer := make([]byte, 1024)
+func (s *ServerRequestHandler) ReceiveUDP() ([]byte, *net.UDPAddr, error) {
+	buffer := make([]byte, 3000)
 	size, addr, err := s.udplistener.ReadFromUDP(buffer)
 	failOnError(err, "Read error:")
 	cmd := buffer[:size]
@@ -68,14 +68,17 @@ func (s *ServerRequestHandler) ReceiveUdp() ([]byte, *net.UDPAddr, error) {
 }
 
 func (s *ServerRequestHandler) SendTcp(msg []byte, writer *bufio.Writer) error {
+	fmt.Println("going to send")
 	_, err := writer.Write(msg)
+	fmt.Println("write")
 	failOnError(err, "error writing")
 	err = writer.Flush()
+	fmt.Println("flush")
 	failOnError(err, "error writing")
 	return err
 }
 
-func (s *ServerRequestHandler) SendUdp(msg []byte, addr *net.UDPAddr) error {
+func (s *ServerRequestHandler) SendUDP(msg []byte, addr *net.UDPAddr) error {
 	_, err := s.udplistener.WriteToUDP(msg, addr)
 	failOnError(err, "error writing")
 	return err

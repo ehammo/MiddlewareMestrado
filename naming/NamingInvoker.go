@@ -1,15 +1,16 @@
 package naming
 
 import (
+	"bufio"
+	"crypto/rsa"
+	"fmt"
+
 	c "../common"
 	i "../infra"
-	"bufio"
-	"fmt"
-	"reflect"
 )
 
 type NamingInvoker struct {
-	srh *i.ServerRequestHandler
+	srh        *i.ServerRequestHandler
 	NamingImpl *NamingImpl
 }
 
@@ -20,7 +21,7 @@ type Client struct {
 
 func NewNamingInvoker(address string) *NamingInvoker {
 	return &NamingInvoker{
-		srh: i.NewSRH(address),
+		srh:        i.NewSRH(address),
 		NamingImpl: NewNamingImpl(),
 	}
 }
@@ -38,35 +39,68 @@ func (n *NamingInvoker) Start() {
 }
 
 func (n *NamingInvoker) ServeTcp(client *Client) {
+	var totalErr = 0
 	for {
 		data, err := n.srh.ReceiveTcp(client.tcpReader)
+		fmt.Println("Naming server received something")
 		if err != nil {
 			fmt.Printf("Error receiving tcp data %s", err)
+			totalErr++
+			if totalErr == 5 {
+				break
+			}
+		} else {
+			var packet = &c.Packet{}
+			err = c.Unmarshall(data, packet)
+			if err != nil {
+				totalErr++
+				if totalErr == 5 {
+					break
+				}
+				fmt.Printf("\nMarshalling error %s\n", err)
+			} else {
+				op := packet.Body.ReqHeader.Operation
+				body0 := packet.Body.ReqBody.Body[0]
+				body1 := packet.Body.ReqBody.Body[1]
+				service, _ := body0.(string)
+				fmt.Println("result:", op, service)
+				var aor *c.AOR
+				var key *rsa.PublicKey
+				if body1 != nil && op == "Register" {
+					fmt.Println("body1 is not null")
+					add := body1.(map[string]interface{})["Address"].(string)
+					fmt.Println(add)
+					objId := body1.(map[string]interface{})["ObjectId"].(string)
+					fmt.Println(objId)
+					E := interface{}(body1.(map[string]interface{})["E"]).(float64)
+					p := body1.(map[string]interface{})["Protocol"].(string)
+					fmt.Println(p)
+					N := body1.(map[string]interface{})["N"].(string)
+					fmt.Println(N)
+					aor = &c.AOR{
+						Address:  add,
+						E:        int(E),
+						N:        N,
+						ObjectId: objId,
+						Protocol: p,
+					}
+					fmt.Println("aor: ", aor.ToString())
+				}
+				if op == "Register" {
+					n.NamingImpl.Register(service, aor)
+				} else if op == "RegisterKey" {
+					n.NamingImpl.RegisterKey(service, key)
+				} else if op == "LookUp" {
+					aor := n.NamingImpl.Lookup(service)
+					fmt.Println("Creating packet")
+					packet := c.NewReplyPacket(aor, "success")
+					fmt.Println("marshalling")
+					dataToSend, _ := c.Marshall(*packet)
+					fmt.Println("prep to send")
+					n.srh.SendTcp(dataToSend, client.tcpWriter)
+					fmt.Println("sent")
+				}
+			}
 		}
-		var packet = &c.Packet{}
-		err = c.Unmarshall(data, packet)
-		if err != nil {
-			fmt.Printf("\nerro %s\n", err)
-		}
-		op := packet.Body.ReqHeader.Operation
-		body0 := packet.Body.ReqBody.Body[0]
-		body1 := packet.Body.ReqBody.Body[1]
-		service, _ := reflect.ValueOf(body0).Interface().(string)
-		var aor c.AOR
-		if body1 != nil {
-			aor, _ = reflect.ValueOf(body1).Interface().(c.AOR)
-		}
-		fmt.Println("result:")
-		fmt.Println(op)
-		fmt.Println(service)
-		if op == "Register" {
-			n.NamingImpl.Register(service, &aor)
-		} else if op == "LookUp" {
-			aor := n.NamingImpl.Lookup(service)
-			packet := c.NewReplyPacket(aor, "success")
-			dataToSend, _ := c.Marshall(*packet)
-			n.srh.SendTcp(dataToSend, client.tcpWriter)
-		}
-
 	}
 }

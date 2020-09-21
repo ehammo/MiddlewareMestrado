@@ -1,12 +1,14 @@
 package common
 
+import "fmt"
+
 type Packet struct {
 	Header Header
 	Body   Body
 }
 
 type Header struct {
-	version      string
+	Version string
 }
 
 type Body struct {
@@ -26,43 +28,45 @@ type ReqRepBody struct {
 }
 
 type RepHeader struct {
-    status string
+	status string
 }
 
-func NewRequestPacket(message Message) *Packet {
+func NewRequestPacket(message *Message) *Packet {
+	fmt.Println("Creating package")
 	reqHeader := &ReqHeader{
 		ResponseExpected: message.IsReplyRequired(),
-		Operation: message.Operation,
+		Operation:        message.Operation,
 	}
 	var reqReqBodyArray = make([]interface{}, 2)
 	reqReqBodyArray[0] = message.Topic
 	reqReqBodyArray[1] = message.AOR
-	reqRepBody := &ReqRepBody {
+	reqRepBody := &ReqRepBody{
 		Body: reqReqBodyArray,
 	}
-	return &Packet{
+	packet := &Packet{
 		Header: Header{
-			version:    "1.0",
+			Version: "1.0",
 		},
-		Body:   Body{
+		Body: Body{
 			ReqHeader: *reqHeader,
 			ReqBody:   *reqRepBody,
 		},
 	}
+	return packet
 }
 
 func NewReplyPacket(response interface{}, status string) *Packet {
 	repHeader := &RepHeader{status: status}
 	var reqReqBodyArray = make([]interface{}, 1)
 	reqReqBodyArray[0] = response
-	reqRepBody := &ReqRepBody {
+	reqRepBody := &ReqRepBody{
 		Body: reqReqBodyArray,
 	}
 	return &Packet{
 		Header: Header{
-			version:    "1.0",
+			Version: "1.0",
 		},
-		Body:   Body{
+		Body: Body{
 			RepHeader: *repHeader,
 			RepBody:   *reqRepBody,
 		},

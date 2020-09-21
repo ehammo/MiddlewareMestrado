@@ -7,15 +7,15 @@ import (
 )
 
 type ClientRequestHandler struct {
-	reader    *bufio.Reader
-	writer    *bufio.Writer
-	udpconn   *net.UDPConn
-	addr      *net.UDPAddr
-	srvAddr   string
+	reader  *bufio.Reader
+	writer  *bufio.Writer
+	udpconn *net.UDPConn
+	addr    *net.UDPAddr
+	srvAddr string
 }
 
 func NewCRH(address string) *ClientRequestHandler {
-	return &ClientRequestHandler {
+	return &ClientRequestHandler{
 		srvAddr: address,
 	}
 }
@@ -28,7 +28,7 @@ func (c *ClientRequestHandler) DialTcp() {
 	c.writer = bufio.NewWriter(conn)
 }
 
-func (c *ClientRequestHandler) DialUdp() {
+func (c *ClientRequestHandler) DialUDP() {
 	fmt.Println("Dialing")
 	addr, err := net.ResolveUDPAddr("udp", c.srvAddr)
 	failOnError(err, "error resolving address")
@@ -42,7 +42,7 @@ func (c *ClientRequestHandler) ReceiveTcp() []byte {
 		c.DialTcp()
 	}
 	if c.reader != nil {
-		buffer := make([]byte, 1024)
+		buffer := make([]byte, 3000)
 		size, err := c.reader.Read(buffer)
 		cmd := buffer[:size]
 		failOnError(err, "Error receiving message")
@@ -52,12 +52,12 @@ func (c *ClientRequestHandler) ReceiveTcp() []byte {
 	}
 	return nil
 }
-func (c *ClientRequestHandler) ReceiveUdp() []byte {
+func (c *ClientRequestHandler) ReceiveUDP() []byte {
 	if c.udpconn == nil {
-		c.DialUdp()
+		c.DialUDP()
 	}
 	if c.udpconn != nil {
-		buffer := make([]byte, 1024)
+		buffer := make([]byte, 3000)
 		_, addr, err := c.udpconn.ReadFromUDP(buffer)
 		c.addr = addr
 		failOnError(err, "Error receiving message")
@@ -87,9 +87,9 @@ func (c *ClientRequestHandler) SendTcp(msg []byte) string {
 	return "Send success"
 }
 
-func (c *ClientRequestHandler) SendUdp(msg []byte) string {
+func (c *ClientRequestHandler) SendUDP(msg []byte) string {
 	if c.udpconn == nil {
-		c.DialUdp()
+		c.DialUDP()
 	}
 	if c.udpconn != nil {
 		_, err := c.udpconn.Write(msg)

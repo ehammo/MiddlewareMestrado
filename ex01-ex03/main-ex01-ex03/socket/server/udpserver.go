@@ -10,7 +10,7 @@ import (
 	"sync"
 )
 
-type UdpChatServer struct {
+type UDPChatServer struct {
 	listener *net.UDPConn
 	clients []*udpclient
 	mutex   *sync.Mutex
@@ -22,13 +22,13 @@ type udpclient struct {
 	name   string
 }
 
-func NewUdpServer() *UdpChatServer {
-	return &UdpChatServer{
+func NewUDPServer() *UDPChatServer {
+	return &UDPChatServer{
 		mutex: &sync.Mutex{},
 	}
 }
 
-func (s *UdpChatServer) deserializar(data []byte) (interface{}, error) {
+func (s *UDPChatServer) deserializar(data []byte) (interface{}, error) {
 	b := bytes.NewBuffer(data)
 	// todo; what about other commands?
 	cmd := protocol.MessageCommand{
@@ -39,7 +39,7 @@ func (s *UdpChatServer) deserializar(data []byte) (interface{}, error) {
 	return cmd, err
 }
 
-func (s *UdpChatServer) serializar(cmd interface{}) ([]byte, error) {
+func (s *UDPChatServer) serializar(cmd interface{}) ([]byte, error) {
 	var b bytes.Buffer
 	switch v := cmd.(type) {
 	case protocol.MessageCommand:
@@ -51,7 +51,7 @@ func (s *UdpChatServer) serializar(cmd interface{}) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func (s *UdpChatServer) serve(client *udpclient) {
+func (s *UDPChatServer) serve(client *udpclient) {
 	defer s.remove(client)
 	for {
 		buffer := make([]byte, 1024)
@@ -80,7 +80,7 @@ func (s *UdpChatServer) serve(client *udpclient) {
 	}
 }
 
-func (s *UdpChatServer) Start() {
+func (s *UDPChatServer) Start() {
 	client := &udpclient{
 		conn:   s.listener,
 	}
@@ -88,7 +88,7 @@ func (s *UdpChatServer) Start() {
 	s.serve(client)
 }
 
-func (s *UdpChatServer) Listen(address string) error {
+func (s *UDPChatServer) Listen(address string) error {
 	addr,err := net.ResolveUDPAddr("udp",address)
 	l, err := net.ListenUDP("udp", addr)
 	if err == nil {
@@ -98,11 +98,11 @@ func (s *UdpChatServer) Listen(address string) error {
 	return err
 }
 
-func (s *UdpChatServer) Close() {
+func (s *UDPChatServer) Close() {
 	s.listener.Close()
 }
 
-func (s *UdpChatServer) Broadcast(command interface{}) error {
+func (s *UDPChatServer) Broadcast(command interface{}) error {
 	for _, client := range s.clients {
 		// TODO: handle error here?
 		bytes, _ := s.serializar(command)
@@ -112,7 +112,7 @@ func (s *UdpChatServer) Broadcast(command interface{}) error {
 }
 
 
-func (s *UdpChatServer) remove(client *udpclient) {
+func (s *UDPChatServer) remove(client *udpclient) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	// remove the connections from clients array

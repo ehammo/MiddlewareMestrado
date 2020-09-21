@@ -1,23 +1,24 @@
 package distribution
 
 import (
-	common "../common"
 	"fmt"
 	"strings"
 	"sync"
+
+	common "../common"
 )
 
 type EventBus struct {
-	client  *Client
-	invoker *Invoker
-	mutex   *sync.Mutex
+	client       *Client
+	queueManager *QueueManager
+	mutex        *sync.Mutex
 }
 
 func NewEventBus() *EventBus {
 	return &EventBus{
-		client: nil,
-		invoker: nil,
-		mutex: &sync.Mutex{},
+		client:       nil,
+		queueManager: nil,
+		mutex:        &sync.Mutex{},
 	}
 }
 
@@ -35,28 +36,36 @@ func (e *EventBus) RegisterOnLane(lane string) string {
 
 func (e *EventBus) handleEvent(op string, lane string) string {
 	fmt.Println("Calling handle event from eventbus")
-	if e.client == nil || e.invoker == nil {
-		return "Error nil invoker or nil client"
+	if e.client == nil || e.queueManager == nil {
+		return "Error nil queueManager or nil client"
 	}
 	e.mutex.Lock()
-	e.invoker.mutex.Lock()
-	if op == "Register" || op == "ChangeLane" {
+	e.queueManager.mutex.Lock()
+	if op == "Register" {
 		e.client.currentLane = lane
-		e.invoker.clients[e.client.id] = e.client
+		e.queueManager.clients[e.client.Id] = e.client
+		message := &common.Message{
+			Operation: op,
+			Topic:     e.client.Id,
+		}
+		e.queueManager.sendMessage(message, e.client)
+	} else if op == "ChangeLane" {
+		e.client.currentLane = lane
+		e.queueManager.clients[e.client.Id] = e.client
 	} else if op == "BroadcastEvent" {
-		for _, client := range e.invoker.clients {
+		for _, client := range e.queueManager.clients {
 			if client != nil && strings.Contains(lane, client.currentLane) {
 				message := &common.Message{
 					Operation: op,
 					Topic:     lane,
 				}
-				e.invoker.sendMessage(message, client)
+				e.queueManager.sendMessage(message, client)
 			}
 		}
 	} else {
 		return "Invalid operation"
 	}
-	e.invoker.mutex.Unlock()
+	e.queueManager.mutex.Unlock()
 	e.mutex.Unlock()
 	return "Success"
 }
@@ -67,8 +76,8 @@ func (e *EventBus) SetClient(c *Client) {
 	e.mutex.Unlock()
 }
 
-func (e *EventBus) SetInvoker(i *Invoker) {
+func (e *EventBus) SetQueueManager(qm *QueueManager) {
 	e.mutex.Lock()
-	e.invoker = i
+	e.queueManager = qm
 	e.mutex.Unlock()
 }

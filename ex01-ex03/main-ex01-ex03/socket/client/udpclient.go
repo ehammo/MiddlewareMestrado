@@ -10,19 +10,19 @@ import (
 	"net"
 )
 
-type UdpChatClient struct {
+type UDPChatClient struct {
 	conn      *net.UDPConn
 	name      string
 	incoming  chan protocol.MessageCommand
 }
 
-func NewUdpClient() *UdpChatClient {
-	return &UdpChatClient{
+func NewUDPClient() *UDPChatClient {
+	return &UDPChatClient{
 		incoming: make(chan protocol.MessageCommand, 50000),
 	}
 }
 
-func (c *UdpChatClient) Dial(address string) error {
+func (c *UDPChatClient) Dial(address string) error {
 	addr, err := net.ResolveUDPAddr("udp",address)
 	conn, err := net.DialUDP("udp", nil, addr)
 
@@ -34,7 +34,7 @@ func (c *UdpChatClient) Dial(address string) error {
 }
 
 
-func (c *UdpChatClient) deserializar(data []byte) (interface{}, error) {
+func (c *UDPChatClient) deserializar(data []byte) (interface{}, error) {
 	b := bytes.NewBuffer(data)
 	// todo; what about other commands?
 	cmd := protocol.MessageCommand{
@@ -45,7 +45,7 @@ func (c *UdpChatClient) deserializar(data []byte) (interface{}, error) {
 	return cmd, err
 }
 
-func (c *UdpChatClient) serializar(cmd interface{}) ([]byte, error) {
+func (c *UDPChatClient) serializar(cmd interface{}) ([]byte, error) {
 	var b bytes.Buffer
 	switch v := cmd.(type) {
 	case protocol.MessageCommand:
@@ -57,7 +57,7 @@ func (c *UdpChatClient) serializar(cmd interface{}) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func (c *UdpChatClient) Start() {
+func (c *UDPChatClient) Start() {
 	c.conn.SetReadDeadline(time.Now().Add(3 * time.Second))
 	for  {
 		buffer := make([]byte, 1024)
@@ -87,32 +87,32 @@ func (c *UdpChatClient) Start() {
 	//close(c.incoming)
 }
 
-func (c *UdpChatClient) Close() {
+func (c *UDPChatClient) Close() {
 	c.conn.Close()
 }
 
-func (c *UdpChatClient) Incoming() chan protocol.MessageCommand {
+func (c *UDPChatClient) Incoming() chan protocol.MessageCommand {
 	return c.incoming
 }
 
-func (c *UdpChatClient) Send(command interface{}) error {
+func (c *UDPChatClient) Send(command interface{}) error {
 	cmdBytes, _ := c.serializar(command)
 	_, err := c.conn.Write(cmdBytes)
 	return err
 }
 
-func (c *UdpChatClient) SendMessage(message string) error {
+func (c *UDPChatClient) SendMessage(message string) error {
 	return c.Send(protocol.MessageCommand{
 		Name: c.name,
 		Message: message,
 	})
 }
 
-func (c *UdpChatClient) SetName(name string) error {
+func (c *UDPChatClient) SetName(name string) error {
 	c.name = name
 	return nil
 }
 
-func (c *UdpChatClient) Clean() {
+func (c *UDPChatClient) Clean() {
 	close(c.incoming)
 }
