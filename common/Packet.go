@@ -8,7 +8,8 @@ type Packet struct {
 }
 
 type Header struct {
-	Version string
+	Version  string
+	ClientId int
 }
 
 type Body struct {
@@ -45,7 +46,8 @@ func NewRequestPacket(message *Message) *Packet {
 	}
 	packet := &Packet{
 		Header: Header{
-			Version: "1.0",
+			Version:  "1.0",
+			ClientId: message.ClientId,
 		},
 		Body: Body{
 			ReqHeader: *reqHeader,

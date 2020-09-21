@@ -6,6 +6,7 @@ type Message struct {
 	Operation string      `json:"operation"`
 	Topic     interface{} `json:"topic"`
 	AOR       interface{} `json:"AOR"`
+	ClientId  int
 }
 
 func (m *Message) IsReplyRequired() bool {

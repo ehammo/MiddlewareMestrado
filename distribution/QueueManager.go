@@ -29,6 +29,7 @@ type Client struct {
 	tcpWriter   *bufio.Writer
 	udpAddr     *net.UDPAddr
 	Id          int
+	i           int
 	Pub         *rsa.PublicKey
 }
 
@@ -51,7 +52,8 @@ func (qm *QueueManager) Start() {
 			newTcpClient := &Client{
 				tcpReader: bufio.NewReader(*conn),
 				tcpWriter: bufio.NewWriter(*conn),
-				Id:        qm.uniqueId,
+				Id:        -1,
+				i:         qm.uniqueId,
 				EventBus:  eventBus,
 			}
 			eventBus.SetQueueManager(qm)
@@ -71,60 +73,77 @@ func (qm *QueueManager) ServeUDP() {
 			fmt.Printf("Error receiving udp data %s", err)
 		}
 		newUDPClient := qm.findAddUDPClient(addr)
-		uncriptedData := common.Decrypt(data, qm.kp.Priv, false)
-		qm.unmarshallAndRun(uncriptedData, newUDPClient)
+		qm.unmarshallAndRun(data, newUDPClient)
 	}
 }
 
 func (qm *QueueManager) ServeTcp(client *Client) {
-	fmt.Println("Serving client C" + strconv.Itoa(client.Id))
+	fmt.Println("Serving client C" + strconv.Itoa(client.i))
+	errTotal := 0
 	for {
 		data, err := qm.srh.ReceiveTcp(client.tcpReader)
 		if err != nil {
+			errTotal++
 			fmt.Printf("Error receiving tcp data %s", err)
+		} else {
+			qm.unmarshallAndRun(data, client)
 		}
-		uncriptedData := common.Decrypt(data, qm.kp.Priv, false)
-		qm.unmarshallAndRun(uncriptedData, client)
+		if errTotal > 5 {
+			break
+		}
 	}
 }
 
 func (qm *QueueManager) unmarshallAndRun(data []byte, client *Client) {
-	fmt.Println("unmarshalling and running message from C" + strconv.Itoa(client.Id))
+	uncriptedData := common.Decrypt(data, qm.kp.Priv, false)
+	fmt.Println("unmarshalling and running message from C" + strconv.Itoa(client.i))
 	packet := &common.Packet{}
-	var err = common.Unmarshall(data, packet)
+	var err = common.Unmarshall(uncriptedData, packet)
 	if err != nil {
 		fmt.Printf("Error unmarshelling %s", err)
 	}
+	fmt.Println("Unmarshalled")
 	qm.runCmd(client, packet)
 }
 
 func (qm *QueueManager) runCmd(c *Client, packet *common.Packet) {
+	clientID := packet.Header.ClientId
+	fmt.Println("Message from C", clientID)
+	c.Id = clientID
 	operation := packet.Body.ReqHeader.Operation
-	body := packet.Body.ReqBody.Body[0]
-	message := &common.Message{
-		Operation: operation,
-		Topic:     body,
-	}
-	fmt.Println("running command " + message.Operation + " from client C" + strconv.Itoa(c.Id))
-	if message.Operation == "Register" {
-		c.EventBus.RegisterOnLane(message.Topic.(string))
-	} else if message.Operation == "RegisterKey" {
-		pubMap := message.Topic.(map[string]interface{})
-		Nstring := pubMap["N"].(string)
-		Eint := int(pubMap["E"].(float64))
-		fmt.Println(strconv.Itoa(Eint))
-		fmt.Println(Nstring)
-		N := big.Int{}
-		N.SetString(Nstring, 10)
-		clientPub := &rsa.PublicKey{
-			N: &N,
-			E: Eint,
+	fmt.Println("op", operation)
+	fmt.Println("checking body length")
+	if len(packet.Body.ReqBody.Body) > 0 {
+		body := packet.Body.ReqBody.Body[0]
+		message := &common.Message{
+			Operation: operation,
+			Topic:     body,
 		}
-		c.Pub = clientPub
-	} else if message.Operation == "ChangeLane" {
-		c.EventBus.ChangeLane(message.Topic.(string))
-	} else if message.Operation == "BroadcastEvent" {
-		c.EventBus.BroadcastEvent(message.Topic.(string))
+		if c.Pub == nil {
+			c.Pub = qm.findPubWithClientId(c.Id)
+		}
+		fmt.Println("running command " + message.Operation + " from client C" + strconv.Itoa(c.Id))
+		if message.Operation == "Register" {
+			c.EventBus.RegisterOnLane(message.Topic.(string))
+		} else if message.Operation == "RegisterKey" {
+			pubMap := message.Topic.(map[string]interface{})
+			Nstring := pubMap["N"].(string)
+			Eint := int(pubMap["E"].(float64))
+			fmt.Println(strconv.Itoa(Eint))
+			fmt.Println(Nstring)
+			N := big.Int{}
+			N.SetString(Nstring, 10)
+			clientPub := &rsa.PublicKey{
+				N: &N,
+				E: Eint,
+			}
+			c.Pub = clientPub
+		} else if message.Operation == "ChangeLane" {
+			c.EventBus.ChangeLane(message.Topic.(string))
+		} else if message.Operation == "BroadcastEvent" {
+			c.EventBus.BroadcastEvent(message.Topic.(string))
+		}
+		fmt.Println("Finishing running command " + message.Operation + " from client C" + strconv.Itoa(c.Id))
 	}
 }
 
@@ -151,9 +170,25 @@ func (qm *QueueManager) sendMessage(message *common.Message, client *Client) {
 
 func (qm *QueueManager) addClientOnList(newClient *Client) {
 	qm.mutex.Lock()
+	fmt.Println("add client on list. Locked")
 	qm.clients[qm.uniqueId] = newClient
 	qm.uniqueId = qm.uniqueId + 1
 	qm.mutex.Unlock()
+	fmt.Println("add client on list. Unlocked")
+}
+
+func (qm *QueueManager) findPubWithClientId(id int) *rsa.PublicKey {
+	qm.mutex.Lock()
+	fmt.Println("findPubWithClientId. Locked")
+	var pub *rsa.PublicKey
+	for _, client := range qm.clients {
+		if client.Id == id {
+			pub = client.Pub
+		}
+	}
+	qm.mutex.Unlock()
+	fmt.Println("findPubWithClientId. Unlocked")
+	return pub
 }
 
 func (qm *QueueManager) findAddUDPClient(addr *net.UDPAddr) *Client {

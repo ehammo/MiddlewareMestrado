@@ -40,7 +40,9 @@ func (e *EventBus) handleEvent(op string, lane string) string {
 		return "Error nil queueManager or nil client"
 	}
 	e.mutex.Lock()
+	fmt.Println("Lock1 ok")
 	e.queueManager.mutex.Lock()
+	fmt.Println("Lock2 ok")
 	if op == "Register" {
 		e.client.currentLane = lane
 		e.queueManager.clients[e.client.Id] = e.client
@@ -56,8 +58,8 @@ func (e *EventBus) handleEvent(op string, lane string) string {
 		for _, client := range e.queueManager.clients {
 			if client != nil && strings.Contains(lane, client.currentLane) {
 				message := &common.Message{
-					Operation: op,
-					Topic:     lane,
+					Operation: "break",
+					Topic:     "",
 				}
 				e.queueManager.sendMessage(message, client)
 			}

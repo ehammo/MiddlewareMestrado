@@ -19,7 +19,7 @@ type ClientProxy struct {
 	srvPub     *rsa.PublicKey
 }
 
-func NewClientProxy(aor *common.AOR) *ClientProxy {
+func NewClientProxy(aor *common.AOR, id int) *ClientProxy {
 	N := big.Int{}
 	//N.SetString(aor.Pub.N, 10)
 	N.SetString(aor.N, 10)
@@ -34,7 +34,7 @@ func NewClientProxy(aor *common.AOR) *ClientProxy {
 		id:         aor.ObjectId,
 		Kp:         common.GenerateKeypair(true),
 		srvPub:     srvPub,
-		ClientId:   -1,
+		ClientId:   id,
 	}
 }
 
@@ -63,21 +63,19 @@ func (cp *ClientProxy) invokeCommand(op string, object interface{}) {
 	var message = &common.Message{
 		Operation: op,
 		Topic:     object,
+		ClientId:  cp.ClientId,
 	}
 	var invocation = &common.Invocation{
 		Addr:    cp.srvAddress,
 		Message: message,
 	}
 	result := cp.Invoke(invocation).Result
-	resultMessage, ok := result.(*common.Message)
-	if ok {
-		if message.Operation == "Register" {
-			cp.ClientId = resultMessage.Topic.(int)
-		}
-	} else {
+	message, ok := result.(*common.Message)
+	if !ok {
 		fmt.Println(result.(string))
+	} else {
+		fmt.Println(message)
 	}
-
 }
 
 func (cp *ClientProxy) Invoke(invocation *common.Invocation) *common.Termination {
@@ -94,6 +92,7 @@ func (cp *ClientProxy) Invoke(invocation *common.Invocation) *common.Termination
 	}
 	fmt.Println("Encrypting")
 	criptedMessage := common.Encrypt(marshalledMessage, cp.srvPub, false)
+	fmt.Println("Encrypted")
 	if cp.protocol == "tcp" {
 		return cp.SendReceiveTcp(criptedMessage, message.IsReplyRequired())
 	} else {
@@ -102,13 +101,10 @@ func (cp *ClientProxy) Invoke(invocation *common.Invocation) *common.Termination
 }
 
 func (cp *ClientProxy) SendReceiveTcp(message []byte, isReplyRequired bool) *common.Termination {
+	fmt.Println("Sending")
 	cp.crh.SendTcp(message)
-	if isReplyRequired {
-		data := cp.crh.ReceiveTcp()
-		return unpack(data)
-	} else {
-		return &common.Termination{Result: &common.Message{Topic: "Success"}}
-	}
+	fmt.Println("Sent")
+	return &common.Termination{Result: &common.Message{Topic: "Success"}}
 }
 
 func unpack(data []byte) *common.Termination {
@@ -117,8 +113,14 @@ func unpack(data []byte) *common.Termination {
 	if err != nil {
 		return marshallingError(err)
 	}
-	ter := packet.Body.RepBody.Body[0]
-	return &common.Termination{Result: ter}
+	var ter *common.Termination
+	if len(packet.Body.RepBody.Body) > 0 {
+		ter = &common.Termination{Result: packet.Body.RepBody.Body[0]}
+	} else {
+		ter = &common.Termination{Result: "No response"}
+	}
+
+	return ter
 }
 
 func (cp *ClientProxy) SendReceiveUDP(message []byte, isReplyRequired bool) *common.Termination {
@@ -134,14 +136,19 @@ func (cp *ClientProxy) SendReceiveUDP(message []byte, isReplyRequired bool) *com
 func (cp *ClientProxy) Start() {
 	for {
 		var data []byte
-		if cp.protocol == "tcp" {
-			data = cp.crh.ReceiveTcp()
-		} else {
-			data = cp.crh.ReceiveUDP()
+		if cp.crh != nil {
+			if cp.protocol == "tcp" {
+				data = cp.crh.ReceiveTcp()
+			} else {
+				data = cp.crh.ReceiveUDP()
+			}
+			decryptedData := common.Decrypt(data, cp.Kp.Priv, true)
+			ter := unpack(decryptedData)
+			result := ter.Result
+			fmt.Println("Start-result")
+			if result != nil {
+				fmt.Println(result)
+			}
 		}
-		decryptedData := common.Decrypt(data, cp.Kp.Priv, true)
-		ter := unpack(decryptedData)
-		result, _ := ter.Result.(*[]byte)
-		fmt.Println(string(*result))
 	}
 }

@@ -49,6 +49,13 @@ func getHash(client bool) hash.Hash {
 }
 
 func Encrypt(message []byte, pub *rsa.PublicKey, client bool) []byte {
+	if message == nil {
+		fmt.Println("message null")
+		return nil
+	} else if pub == nil {
+		fmt.Println("pub null")
+		return nil
+	}
 	var err error
 	fmt.Println(len(message))
 	ciphertext, err := rsa.EncryptOAEP(getHash(client), rand.Reader, pub, message, nil)
@@ -62,6 +69,13 @@ func Encrypt(message []byte, pub *rsa.PublicKey, client bool) []byte {
 }
 
 func Decrypt(cipherText []byte, priv *rsa.PrivateKey, client bool) []byte {
+	if cipherText == nil {
+		fmt.Println("cipherText null")
+		return nil
+	} else if priv == nil {
+		fmt.Println("priv null")
+		return nil
+	}
 	message, err := rsa.DecryptOAEP(getHash(client), rand.Reader, priv, cipherText, nil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error from decryption: %s\n", err)
