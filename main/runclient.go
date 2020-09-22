@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	d "../distribution"
@@ -52,7 +53,11 @@ func setupAClient(id string) *d.ClientProxy {
 }
 
 func trimClientIdPlusC(clientId string) string {
-	toint, _ := strconv.Atoi(clientId)
+	clientId = strings.TrimRight(clientId, "\r\n")
+	toint, err := strconv.Atoi(clientId)
+	if err != nil {
+		log.Fatal("id invalido")
+	}
 	clientId = "c" + strconv.Itoa(toint)
 	return clientId
 }
@@ -92,7 +97,7 @@ func main() {
 	writeToFile(id, setupTime+"\n")
 	fmt.Println(setupTime)
 	fmt.Println("Stress use case. Send 1000 messages to server")
-
+	fmt.Scanln()
 	var times []float64 = make([]float64, 1000, 1000)
 	for i := 0; i < 1000; i++ {
 		midTime := time.Now()
