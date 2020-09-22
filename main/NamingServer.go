@@ -1,12 +1,13 @@
 package main
 
 import (
-	naming "../naming"
 	"fmt"
+
+	naming "../naming"
 )
 
 func main() {
-	invoker := naming.NewNamingInvoker("localhost:1243")
+	invoker := naming.NewNamingInvoker("172.17.0.2:1243")
 	invoker.Start()
 	fmt.Scanln()
 }

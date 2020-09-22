@@ -10,10 +10,10 @@ import (
 
 func main() {
 	kp := c.GenerateKeypair(false)
-	namingProxy := n.NewNamingProxy("localhost:1243")
+	namingProxy := n.NewNamingProxy("172.17.0.2:1243")
 
 	aor := &c.AOR{
-		Address:  "localhost:1111",
+		Address:  "172.17.0.3:1111",
 		Protocol: "tcp",
 		ObjectId: "1",
 		N:        (*(kp.Pub.N)).String(),

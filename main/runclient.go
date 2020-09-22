@@ -15,7 +15,7 @@ import (
 )
 
 func startClient(id int) *d.ClientProxy {
-	namingProxy := n.NewNamingProxy("localhost:1243")
+	namingProxy := n.NewNamingProxy("172.17.0.2:1243")
 
 	aor := namingProxy.LookUp("Vanet")
 	fmt.Println("Received aor:")
@@ -72,7 +72,7 @@ func writeToFile(clientId string, data string) {
 	if _, err := file.WriteString(data); err != nil {
 		log.Fatal(err)
 	}
-
+	fmt.Println("Saving file " + filename)
 }
 
 func FloatToString(input_num float64) string {
