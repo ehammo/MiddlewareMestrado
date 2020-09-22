@@ -20,8 +20,6 @@ func startClient(id int) *d.ClientProxy {
 	return c
 }
 
-//     c3   c2  c1^  (*)
-//     c5   c4
 func threeBreakingCars() {
 	log.Printf("twoBreakingCars")
 	var c1, c2, c3, c4, c5 *d.ClientProxy
