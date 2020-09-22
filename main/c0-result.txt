@@ -1,0 +1,7 @@
+Time to setup: 878.404700 mili
+Time to setup: 1004.422000 mili
+Mean: 1.615277 mili
+Sd: 1756995396.931000 mili
+Time to setup: 912.325500 mili
+Mean: 1.641611 mili
+Sd: 0.001056 mili

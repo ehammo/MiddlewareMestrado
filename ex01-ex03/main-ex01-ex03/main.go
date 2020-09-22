@@ -1,10 +1,6 @@
 package main_ex01_ex03
 
 import (
-	rabbit "./rabbitmq"
-	myrpc "./rpc"
-	client "./socket/client"
-	server "./socket/server"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,6 +8,11 @@ import (
 	"math"
 	"strconv"
 	"time"
+
+	rabbit "./rabbitmq"
+	myrpc "./rpc"
+	client "./socket/client"
+	server "./socket/server"
 )
 
 func tcpServerStart() {
@@ -19,7 +20,7 @@ func tcpServerStart() {
 	s = server.NewServer()
 	err := s.Listen("192.168.56.101:1111")
 	if err != nil {
-		log.Printf("error=%s",err.Error())
+		log.Printf("error=%s", err.Error())
 	}
 	go s.Start()
 }
@@ -29,7 +30,7 @@ func UDPServerStart() {
 	s = server.NewUDPServer()
 	err := s.Listen("192.168.56.101:2222")
 	if err != nil {
-		log.Printf("error=%s",err.Error())
+		log.Printf("error=%s", err.Error())
 	}
 	go s.Start()
 }
@@ -39,7 +40,7 @@ func rpcServerStart() {
 	s = myrpc.NewRpcServer()
 	err := s.Listen("192.168.56.101:3333")
 	if err != nil {
-		log.Printf("error=%s",err.Error())
+		log.Printf("error=%s", err.Error())
 	}
 	go s.Start()
 }
@@ -52,13 +53,13 @@ func rabbitServerStart(clients []string) {
 	go s.Start()
 }
 
-func rabbitClient(name string) client.ChatClient{
+func rabbitClient(name string) client.ChatClient {
 	var c1 client.ChatClient
 	c1 = rabbit.NewClient()
 	println("lets dial")
 	err := c1.Dial(name)
 	if err != nil {
-		log.Printf("main-ex01-ex03 dial error=%s",err.Error())
+		log.Printf("main-ex01-ex03 dial error=%s", err.Error())
 	}
 	go c1.Start()
 	return c1
@@ -70,7 +71,7 @@ func rpcClient() client.ChatClient {
 	println("lets dial")
 	err := c1.Dial("192.168.56.101:3333")
 	if err != nil {
-		log.Printf("main-ex01-ex03 dial error=%s",err.Error())
+		log.Printf("main-ex01-ex03 dial error=%s", err.Error())
 	}
 	go c1.Start()
 	return c1
@@ -81,7 +82,7 @@ func udpClient() client.ChatClient {
 	c1 = client.NewUDPClient()
 	err := c1.Dial("192.168.56.101:2222")
 	if err != nil {
-		log.Printf("main-ex01-ex03 dial error=%s",err.Error())
+		log.Printf("main-ex01-ex03 dial error=%s", err.Error())
 	}
 	go c1.Start()
 	return c1
@@ -92,29 +93,29 @@ func tcpClient() client.ChatClient {
 	c1 = client.NewClient()
 	var err = c1.Dial("192.168.56.101:1111")
 	if err != nil {
-		log.Printf("main-ex01-ex03 dial error=%s",err.Error())
+		log.Printf("main-ex01-ex03 dial error=%s", err.Error())
 	}
 	go c1.Start()
 	return c1
 }
 
 func runMessages(c1 *client.ChatClient, sentMessages int, currentSum float64,
-	             clientType string, clientName string, shouldRead bool,
-	             times *[10000]float64) {
-	const defaultValue  = 10000
-	log.Printf("sending %d messages",defaultValue)
+	clientType string, clientName string, shouldRead bool,
+	times *[10000]float64) {
+	const defaultValue = 10000
+	log.Printf("sending %d messages", defaultValue)
 	var sum float64
 	var total, zeroCount int
 	total = sentMessages
-	zeroCount=0
+	zeroCount = 0
 	sum = currentSum
 	var forcefulBreak = false
-	var delay = 1*time.Millisecond
+	var delay = 1 * time.Millisecond
 	for i := 0; i < defaultValue; i++ {
 		var t1 = time.Now()
 		err := (*c1).SendMessage(fmt.Sprintf("%d", i))
 		if err != nil {
-			log.Printf("error=%s",err.Error())
+			log.Printf("error=%s", err.Error())
 			if err == io.EOF {
 				i = defaultValue
 				forcefulBreak = true
@@ -144,12 +145,12 @@ func runMessages(c1 *client.ChatClient, sentMessages int, currentSum float64,
 			var t1 = time.Now()
 			count := 0
 			for i := range (*c1).Incoming() {
-				if count % 10000 == 0{
+				if count%10000 == 0 {
 					println(count, i.Message)
 				}
-				count+=1
+				count += 1
 				if count >= total*5 {
-					break;
+					break
 				}
 			}
 			println("sai do for")
@@ -160,7 +161,7 @@ func runMessages(c1 *client.ChatClient, sentMessages int, currentSum float64,
 				println("Eitcha deu um 0 na leitura")
 			}
 			sum += float64(time.Since(t1).Nanoseconds())
-			println("read "+strconv.Itoa(count)+" messages")
+			println("read " + strconv.Itoa(count) + " messages")
 		}
 		println("read")
 		calculateMeanAndSd(clientType, clientName, total, times, sum)
@@ -173,10 +174,10 @@ func runMessages(c1 *client.ChatClient, sentMessages int, currentSum float64,
 }
 
 func calculateMeanAndSd(clientType string, clientName string,
-	                    total int, times* [10000]float64, sum float64) {
+	total int, times *[10000]float64, sum float64) {
 	var mean, sd float64
 	if sum > 0 && total > 0 {
-		mean = sum/float64(total)
+		mean = sum / float64(total)
 	} else {
 		mean = 0
 	}
@@ -186,10 +187,10 @@ func calculateMeanAndSd(clientType string, clientName string,
 
 	for i := 0; i < total && i < len(times); i++ {
 		if times[i] > 0 {
-			sd += math.Pow(times[i] - mean, 2)
+			sd += math.Pow(times[i]-mean, 2)
 		}
 	}
-	sd = math.Sqrt(sd/float64(total))
+	sd = math.Sqrt(sd / float64(total))
 	log.Printf("Sd: %f", sd)
 	writeToFile(clientType, clientName, mean, sd, total)
 }
@@ -198,11 +199,10 @@ func FloatToString(input_num float64) string {
 	return strconv.FormatFloat(input_num, 'f', 6, 64)
 }
 
-
 func writeToFile(clientType string, clientName string, mean float64, sd float64, total int) {
-	var filename = clientType+clientName+".txt"
+	var filename = clientType + clientName + ".txt"
 	err := ioutil.WriteFile(filename, []byte("clientType, clientName, mean, sd, total\n"+
-		clientType + ", " + clientName + ", " +
+		clientType+", "+clientName+", "+
 		FloatToString(mean)+", "+FloatToString(sd)+", "+strconv.Itoa(total)+"\n"), 0644)
 	if err != nil {
 		log.Fatal(err)
@@ -234,10 +234,9 @@ func runFiveClients(clientType string) {
 	var c4times [10000]float64
 	var c5times [10000]float64
 
-
 	log.Printf("Com 5 clientes")
 	log.Printf(clientType)
-	var c1,c2,c3,c4,c5 client.ChatClient
+	var c1, c2, c3, c4, c5 client.ChatClient
 	if clientType != "rabbit" {
 		c1 = createClient(clientType)
 		c2 = createClient(clientType)
@@ -256,12 +255,12 @@ func runFiveClients(clientType string) {
 	c3.SetName("c3")
 	c4.SetName("c4")
 	c5.SetName("c5")
-	time.Sleep(1*time.Second)
+	time.Sleep(1 * time.Second)
 	go runMessages(&c1, 0, 0, clientType, "c1", shouldRead, &c1times)
-	go runMessages(&c2, 0, 0, clientType, "c2",  shouldRead,&c2times)
-	go runMessages(&c3, 0, 0, clientType, "c3",  shouldRead,&c3times)
-	go runMessages(&c4, 0, 0, clientType, "c4",  shouldRead,&c4times)
-	go runMessages(&c5, 0, 0, clientType, "c5",  shouldRead,&c5times)
+	go runMessages(&c2, 0, 0, clientType, "c2", shouldRead, &c2times)
+	go runMessages(&c3, 0, 0, clientType, "c3", shouldRead, &c3times)
+	go runMessages(&c4, 0, 0, clientType, "c4", shouldRead, &c4times)
+	go runMessages(&c5, 0, 0, clientType, "c5", shouldRead, &c5times)
 	fmt.Scanln()
 	defer c1.Close()
 	defer c2.Close()
@@ -279,6 +278,6 @@ func main() {
 	//fmt.Scanln()
 	//runFiveClients("rabbit")
 	//fmt.Scanln()
-	rabbitServerStart([]string{"c1","c2","c3","c4","c5"})
+	rabbitServerStart([]string{"c1", "c2", "c3", "c4", "c5"})
 	fmt.Scanln()
 }
