@@ -5,3 +5,5 @@ Sd: 1756995396.931000 mili
 Time to setup: 912.325500 mili
 Mean: 1.641611 mili
 Sd: 0.001056 mili
+Time to setup: 818.352600 mili
+Time to setup: 835.232600 mili

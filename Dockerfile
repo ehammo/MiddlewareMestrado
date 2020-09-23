@@ -5,5 +5,4 @@ EXPOSE 1111
 EXPOSE 1234
 RUN apk update
 RUN apk add vim
-#No need for copy if we are mirroring volumes
-#COPY . .
+COPY . .

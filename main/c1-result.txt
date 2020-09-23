@@ -1,0 +1,2 @@
+Time to setup: 823.057200 mili
+Time to setup: 1138.235500 mili
